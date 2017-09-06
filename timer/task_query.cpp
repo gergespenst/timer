@@ -68,6 +68,7 @@ void Dispatcher()
 		tempTask = &TaskQueue[i];
 		if (tempTask->run == 1)
 		{
+			(*(tempTask->task))();
 			if (tempTask->period == 0)
 			{
 				DeleteTask(tempTask->task);
@@ -79,7 +80,7 @@ void Dispatcher()
 					tempTask->start_delay = tempTask->period - 1;
 				}
 			}
-			(*(tempTask->task))();
+			
 		}
 	}
 }

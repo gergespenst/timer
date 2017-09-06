@@ -191,6 +191,12 @@
     <Compile Include="IncFile1.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="keyboard.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="keyboard.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="led_7_seg_drv.cpp">
       <SubType>compile</SubType>
     </Compile>

@@ -5,8 +5,15 @@
  *  Author: USER
  */ 
 #include "led_7_seg_drv.h"
-int8_t blink_mask[5] ={0x00,0x00,0x00,0,0},
-	current_blink_mask[5] = {0,0,0,0,0};
+struct ELEMENT {
+	int8_t mask;
+	int8_t digit;
+	bool digitOn;
+	};
+ELEMENT g_elements[5];
+int8_t	blink_mask[5] ={0x00,0x00,0x00,0,0},
+		current_blink_mask[5] = {0,0,0,0,0};
+		
 
 
 int8_t segDigit[] = {
@@ -34,6 +41,7 @@ int8_t segDigit[] = {
 	0x1C,//u
 	0x00	
 };
+
 #define GET_BIT(x,nbit)		(((x)&_BV(nbit)) == _BV(nbit))
 #define CONVERT_DIGIT(x) ((GET_BIT(segDigit[(x)],0)<<ANODEA)|(GET_BIT(segDigit[(x)],1)<<ANODEB)|(GET_BIT(segDigit[(x)],2)<<ANODEC)|\
 						 (GET_BIT(segDigit[(x)],3)<<ANODED)|(GET_BIT(segDigit[(x)],4)<<ANODEE)|(GET_BIT(segDigit[(x)],5)<<ANODEF)|\
@@ -46,49 +54,49 @@ void Init7Seg()
 	
 	DDR(ANODE_PORT) |= _BV(ANODEA)|_BV(ANODEB)|_BV(ANODEC)|_BV(ANODED)|_BV(ANODEE)|_BV(ANODEF)|_BV(ANODEG)|_BV(ANODEP);
 	PORT(ANODE_PORT) &= ~(_BV(ANODEA)|_BV(ANODEB)|_BV(ANODEC)|_BV(ANODED)|_BV(ANODEE)|_BV(ANODEF)|_BV(ANODEG)|_BV(ANODEP));
-
+		
+		SetDigit(0,1);SetDigit(1,16);SetDigit(3,1);SetDigit(4,20);//Выводим корявенькое InIt
 }
 
 void SetDigit( int8_t digit, int8_t value )
 {
-
-PORT(CATODE_PORT) = ~_BV(digit - 1);
-PORT(ANODE_PORT) = CONVERT_DIGIT(value) & ~(current_blink_mask[digit - 1]) ;
+g_elements[digit].digit = (g_elements[digit].digit & _BV(ANODEP)) | CONVERT_DIGIT(value);
 }
 
-void DrawDigits( int8_t dig1,int8_t dig2,int8_t dig3,int8_t dig4,int8_t dig5 )
+void DisplayAllDigits()
 {
 	static int8_t digit = 0;
-	digit++;
-	switch (digit){
-	case 1:SetDigit(1,dig1);break;
-	case 2:SetDigit(2,dig2); break;
-	case 3:SetDigit(3,dig3); break;
-	case 4:SetDigit(4,dig4); break;
-	case 5:SetDigit(5,dig5); break;
-	default: digit = 0; break;
-	}
-// 	SetDigit(1,dig1);
-// 	_delay_ms(4);
-// 	SetDigit(2,dig2);
-// 	_delay_ms(4);
-// 	SetDigit(3,dig3);
-// 	_delay_ms(4);
-// 	SetDigit(4,dig4);
-// 	_delay_ms(4);
-// 	SetDigit(5,dig5);
+	
+	PORT(CATODE_PORT) = (PORT(CATODE_PORT) | (_BV(CATODE1)|_BV(CATODE2)|_BV(CATODE3)|_BV(CATODE4)|_BV(CATODE5)) ) & ~_BV(digit );
+	
+	if(g_elements[digit].digitOn )
+		 PORT(ANODE_PORT) = (g_elements[digit].digit)  ;
+	else PORT(ANODE_PORT) = (g_elements[digit].digit) & ~(g_elements[digit].mask) ;
+	(digit < 5)?(digit++):(digit = 0);
 }
 
 void SetBlinkDigitPart( int8_t digit,int8_t part )
 {
-	blink_mask[digit - 1] = part;
+	g_elements[digit].mask = part;
 }
 
 void BlinkDigitPart( int8_t digit )
 {
-	if (current_blink_mask[digit - 1] == 0x00)
-	{
-		current_blink_mask[digit - 1] = blink_mask[digit - 1];
-	}else
-		current_blink_mask[digit - 1] = 0x00;
+	(g_elements[digit].digitOn)?(g_elements[digit].digitOn = 0):(g_elements[digit].digitOn = 1);
+}
+
+void SetHLine( int8_t elements )
+{
+	g_elements[2].digit = (g_elements[2].digit & (_BV(ANODEP) |(ELEM_DOT))) | elements;
+}
+
+void SetLLine( int8_t elements )
+{
+	g_elements[0].digit = (g_elements[0].digit & ~_BV(ANODEP)) | ( ((elements & ELEM0) == ELEM0) << ANODEP );
+	g_elements[1].digit = (g_elements[1].digit & ~_BV(ANODEP)) | ( ((elements & ELEM1) == ELEM1) << ANODEP );
+	g_elements[3].digit = (g_elements[3].digit & ~_BV(ANODEP)) | ( ((elements & ELEM3) == ELEM3) << ANODEP );
+	g_elements[4].digit = (g_elements[4].digit & ~_BV(ANODEP)) | ( ((elements & ELEM4) == ELEM4) << ANODEP );
+ 	g_elements[2].digit = (g_elements[2].digit & ~(_BV(ANODEP) |(ELEM_DOT))) | ( ((elements & ELEM2) == ELEM2) << ANODEP ) 
+															   | ( ((elements & ELEM_DOT) == ELEM_DOT) << 7 );
+
 }

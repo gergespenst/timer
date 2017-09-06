@@ -10,9 +10,15 @@
 #define __DISPLAY_TIME_H__
 
 #include "led_7_seg_drv.h"
+#include "task_query.h"
 
-void RedrawTime();
+void InitClock();
+void SetHour(int8_t hour);
+void SetMinute(int8_t min);
 void BlinkTime();
+void StartBlinkMinute();
+void StartBlinkHours();
+void StartBlinkDots();
 
 
 #endif //__DISPLAY_TIME_H__

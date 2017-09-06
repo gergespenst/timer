@@ -40,12 +40,19 @@
 #define ANODEG		7
 #define ANODEP		3
 
-
+#define ELEM0 0x01
+#define ELEM1 0x02
+#define ELEM2 0x04
+#define ELEM3 0x10
+#define ELEM4 0x20
+#define ELEM_DOT 0x40
 
 void Init7Seg();
 void SetDigit(int8_t digit, int8_t value);
-void DrawDigits(int8_t dig1,int8_t dig2,int8_t dig3,int8_t dig4,int8_t dig5);
+void DisplayAllDigits();
 void SetBlinkDigitPart(int8_t digit,int8_t part);
 void BlinkDigitPart(int8_t digit);
+void SetHLine(int8_t elements);
+void SetLLine(int8_t elements);
 
 #endif /* LED_7_SEG_DRV_H_ */

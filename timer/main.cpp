@@ -9,7 +9,9 @@
 #include <util/delay.h>
 #include "led_7_seg_drv.h"
 #include "task_query.h"
+#include "display_time.h"
 #include "util.h"
+#include "keyboard.h"
 
 #define TIMER_CONST (0xFF - F_CPU/1024000L )
 
@@ -38,32 +40,49 @@ void TestBlink(){
 int8_t test = 1;
 
 void TestInc(){
-DrawDigits(1,2,8,4,5);
+DisplayAllDigits();
 
 }
 
 void Test(){
-	SetBlinkDigitPart(2,0xFF);
+	SetBlinkDigitPart(1,0xFF);
+	CHANGE_BLINK_STATE();
 }
 
 void BlinkDigits(){
-	BlinkDigitPart(2);
+	BlinkDigitPart(1);
 }
 
+void PressFunc(int8_t key){
+	SetHLine(key);
+	
+	};
+	
+void LongPressFunc(int8_t key){
+	if (KEY0 == key )
+	{
+		
+	}
+	StartBlinkHours();
+	};
+	
+	
 int main(void)
 {
     /* INIT SECTION*/
 	INIT_BLINK_DIODE();
 	Init7Seg();
+	InitClock();
+	InitKeyboard(PressFunc,LongPressFunc);
 	/*END: INIT SECTION*/
 	sei();
 	StartDispatcherTimer();
 
-	AddTask(TestBlink,0,2000);
-	AddTask(TestInc,0,4);
-	AddTask(Test,2000,0);
-	//SetBlinkDigitPart(2,0x08);
-	AddTask(BlinkDigits,0,500);
+	//AddTask(TestBlink,0,2000);
+	AddTask(DisplayAllDigits,0,4);
+	AddTask(ScanKeyboard,0,200);
+
+	//AddTask(BlinkDigits,0,500);
 	
     while (1) Dispatcher(); 
 	
