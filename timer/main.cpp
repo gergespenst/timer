@@ -54,16 +54,19 @@ void BlinkDigits(){
 }
 
 void PressFunc(int8_t key){
-	SetHLine(key);
+	if (KEY2 == key)
+	{
+		StopShowTime();
+	}
 	
 	};
 	
 void LongPressFunc(int8_t key){
 	if (KEY0 == key )
 	{
-		
+		StartBlinkHours();
 	}
-	StartBlinkHours();
+		SetLLineElements(ELEM1,ELEMON);
 	};
 	
 	
@@ -72,8 +75,8 @@ int main(void)
     /* INIT SECTION*/
 	INIT_BLINK_DIODE();
 	Init7Seg();
-	InitClock();
-	InitKeyboard(PressFunc,LongPressFunc);
+	//InitClock();
+	//InitKeyboard(PressFunc,LongPressFunc);
 	/*END: INIT SECTION*/
 	sei();
 	StartDispatcherTimer();
@@ -81,6 +84,9 @@ int main(void)
 	//AddTask(TestBlink,0,2000);
 	AddTask(DisplayAllDigits,0,4);
 	AddTask(ScanKeyboard,0,200);
+	AddTask(BlinkAllSeg,500,500);
+	//AddTask(UpdateTime,500,500);
+	//StartShowTime();
 
 	//AddTask(BlinkDigits,0,500);
 	

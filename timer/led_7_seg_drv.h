@@ -47,12 +47,28 @@
 #define ELEM4 0x20
 #define ELEM_DOT 0x40
 
+#define DOTH 0x01
+#define DOTL 0x02
+
+#define ELEMOFF 0x00
+#define ELEMON	0x01
+#define ELEMBLINK 0x02
+
 void Init7Seg();
 void SetDigit(int8_t digit, int8_t value);
+void SetDigit( int8_t digit, int8_t value, int8_t state);
+void SetDots(int8_t dots,int8_t state);
+void UpdateSegments();
+void SetSegmentRaw(int8_t segment,int8_t rawVal);
 void DisplayAllDigits();
 void SetBlinkDigitPart(int8_t digit,int8_t part);
 void BlinkDigitPart(int8_t digit);
+void BlinkAllSeg();
 void SetHLine(int8_t elements);
+void SetHLine(int8_t elements,int8_t state);
+void SetHLineElements(int8_t element,int8_t state);
 void SetLLine(int8_t elements);
+void SetLLine(int8_t elements,int8_t state);
+void SetLLineElements(int8_t element,int8_t state);
 
 #endif /* LED_7_SEG_DRV_H_ */

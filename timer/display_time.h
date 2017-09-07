@@ -13,12 +13,16 @@
 #include "task_query.h"
 
 void InitClock();
-void SetHour(int8_t hour);
-void SetMinute(int8_t min);
+void DisplayHours(int8_t hour);
+void DisplayMinute(int8_t min);
 void BlinkTime();
 void StartBlinkMinute();
 void StartBlinkHours();
-void StartBlinkDots();
+void StartShowTime();
+void StopShowTime();
+void UpdateTime();
+void DisplayClock();
+
 
 
 #endif //__DISPLAY_TIME_H__

@@ -26,19 +26,22 @@ void InitClock()
 	g_date.numday = 0;
 	g_date.month = 12;
 	g_date.year = 17;
-	// 
-	SetHour(g_date.hour);
-	SetMinute(g_date.minute);
+	//
+	UpdateTime(); 
+	DisplayHours(g_date.hour);
+	DisplayMinute(g_date.minute);
+	
+	AddTask(UpdateTime,30000,30000);
 	
 }
 
-void SetHour( int8_t hour )
+void DisplayHours( int8_t hour )
 {
 	SetDigit(0,hour/10);
 	SetDigit(1,hour%10);
 }
 
-void SetMinute( int8_t min )
+void DisplayMinute( int8_t min )
 {
 	SetDigit(3,min/10);
 	SetDigit(4,min%10);
@@ -73,13 +76,36 @@ void StartBlinkHours()
 	AddTask(BlinkHoursTask,0,500);
 }
 
-void BlinkDotsTask(){
+void ShowTimeTask(){
 	BlinkDigitPart(2);
+	DisplayHours(g_date.hour);
+	DisplayMinute(g_date.minute);
 }
 
-void StartBlinkDots()
+void StartShowTime()
+{
+	SetHLineElements(ELEM_DOT,ELEMON);
+	SetLLineElements(ELEM_DOT|ELEM0,ELEMON);//Зажигаем индикатор режима часов
+	
+	SetBlinkDigitPart(2,0b11000000);//ставим маску на мигание точек
+	
+	AddTask(ShowTimeTask,0,500);//запускаем задачу мигать точками и обновлять цифры
+}
+
+void StopShowTime()
+{
+SetLLineElements(ELEM0,ELEMOFF);
+}
+
+void UpdateTime()
+{//Эта функция должна грузить время из RTC
+	
+	(g_date.minute > 60)?( g_date.minute = 0):( g_date.minute++);
+
+}
+
+void DisplayClock()
 {
 	
-	SetBlinkDigitPart(2,0b11000000);
-	AddTask(BlinkDotsTask,0,500);
+	
 }
