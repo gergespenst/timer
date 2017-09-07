@@ -71,13 +71,7 @@ void Init7Seg()
 	DDR(ANODE_PORT) |= _BV(ANODEA)|_BV(ANODEB)|_BV(ANODEC)|_BV(ANODED)|_BV(ANODEE)|_BV(ANODEF)|_BV(ANODEG)|_BV(ANODEP);
 	PORT(ANODE_PORT) &= ~(_BV(ANODEA)|_BV(ANODEB)|_BV(ANODEC)|_BV(ANODED)|_BV(ANODEE)|_BV(ANODEF)|_BV(ANODEG)|_BV(ANODEP));
 		
-		SetDigit(0,2,ELEMBLINK);SetDigit(1,3,ELEMON);SetDigit(2,3,ELEMBLINK);SetDigit(3,4,ELEMON);
-		SetDots(DOTH,ELEMON);SetDots(DOTL,ELEMBLINK);
-		SetHLine(ELEM0|ELEM1|ELEM2|ELEM3|ELEM4,ELEMON);
-		SetHLine(ELEM2,ELEMBLINK);
-		SetHLine(ELEM0,ELEMOFF);
-		SetLLine(ELEM0|ELEM1,ELEMON);
-		SetLLine(ELEM2,ELEMBLINK);
+		SetDigit(0,0,ELEMON);SetDigit(1,1,ELEMON);SetDigit(2,2,ELEMON);SetDigit(3,3,ELEMON);
 }
 
 void SetDigit( int8_t digit, int8_t value){};
@@ -147,7 +141,7 @@ void SetSegmentRaw( int8_t segment,int8_t rawVal )
 	g_indicator.segments[segment] = rawVal;
 }
 
-void DisplayAllDigits()
+void DisplayAllSeg()
 {
 	static int8_t digit = 0;
 	
@@ -159,27 +153,13 @@ void DisplayAllDigits()
 	(digit < 5)?(digit++):(digit = 0);
 }
 
-void SetBlinkDigitPart( int8_t digit,int8_t part )
-{
-	g_elements[digit].mask = part;
-}
-
-void BlinkDigitPart( int8_t digit )
-{
-	(g_elements[digit].digitOn)?(g_elements[digit].digitOn = 0):(g_elements[digit].digitOn = 1);
-}
 
 void BlinkAllSeg(){
 	(g_indicator.blinkState)?(g_indicator.blinkState = 0):(g_indicator.blinkState = 1);
 }
 
-void SetHLine( int8_t elements )
-{
-	
-	g_elements[2].digit = (g_elements[2].digit & (_BV(ANODEP) |(ELEM_DOT))) | elements;
-}
 
-void SetHLine(int8_t elements,int8_t state){
+void SetHLineElements(int8_t elements,int8_t state){
 	g_indicator.HLine |= elements;
 		switch(state)	{
 			case ELEMOFF:{
@@ -195,7 +175,7 @@ void SetHLine(int8_t elements,int8_t state){
 		}
 	UpdateSegments();
 }
-void SetLLine(int8_t elements,int8_t state){
+void SetLLineElements(int8_t elements,int8_t state){
 	g_indicator.LLine |= elements;
 	switch(state)	{
 		case ELEMOFF:{
@@ -212,60 +192,3 @@ void SetLLine(int8_t elements,int8_t state){
 	UpdateSegments();
 }
 
-void SetLLine( int8_t elements )
-{
-	g_elements[0].digit = (g_elements[0].digit & ~_BV(ANODEP)) | ( ((elements & ELEM0) == ELEM0) << ANODEP );
-	g_elements[1].digit = (g_elements[1].digit & ~_BV(ANODEP)) | ( ((elements & ELEM1) == ELEM1) << ANODEP );
-	g_elements[3].digit = (g_elements[3].digit & ~_BV(ANODEP)) | ( ((elements & ELEM3) == ELEM3) << ANODEP );
-	g_elements[4].digit = (g_elements[4].digit & ~_BV(ANODEP)) | ( ((elements & ELEM4) == ELEM4) << ANODEP );
-													//здесь сдвиг на один разряд сделан для того чтоб управлять нижней точкой(см. распиновку индикатора)
- 	g_elements[2].digit = (g_elements[2].digit & ~(_BV(ANODEP) |(ELEM_DOT<<1))) | ( ((elements & ELEM2) == ELEM2) << ANODEP ) 
-															   | ( ((elements & ELEM_DOT) == ELEM_DOT) << 7 );
-
-}
-
-
-void SetLLineMask(int8_t elements){
-	g_elements[0].mask = (g_elements[0].mask & ~_BV(ANODEP)) | ( ((elements & ELEM0) == ELEM0) << ANODEP );
-	g_elements[1].mask = (g_elements[1].mask & ~_BV(ANODEP)) | ( ((elements & ELEM1) == ELEM1) << ANODEP );
-	g_elements[3].mask = (g_elements[3].mask & ~_BV(ANODEP)) | ( ((elements & ELEM3) == ELEM3) << ANODEP );
-	g_elements[4].mask = (g_elements[4].mask & ~_BV(ANODEP)) | ( ((elements & ELEM4) == ELEM4) << ANODEP );
-													//здесь сдвиг на один разряд сделан для того чтоб управлять нижней точкой(см. распиновку индикатора)
-	g_elements[2].mask = (g_elements[2].mask & ~(_BV(ANODEP) |(ELEM_DOT<<1))) | ( ((elements & ELEM2) == ELEM2) << ANODEP )
-															 | ( ((elements & ELEM_DOT) == ELEM_DOT) << 7 );
-
-	
-}
-
-void SetLLineElements( int8_t element,int8_t state )
-{
-	switch(state)	{
-		case ELEMOFF:{	g_LLine &= ~element;
-						g_LLineMask &= ~element;}break;
-		case ELEMON:{	g_LLine |= element;
-						g_LLineMask &= ~element;}break;
-		case ELEMBLINK:{g_HLine |= element;
-						g_LLineMask |= element;
-			}break;
-		default:break;
-	}
-	SetLLine(g_LLine);
-	SetLLineMask(g_LLineMask);
-
-}
-
-void SetHLineElements( int8_t element,int8_t state )
-{
-	switch(state)	{
-		case ELEMOFF:{	g_HLine &= ~element;
-						}break;
-		case ELEMON:{	g_HLine |= element;
-						}break;
-		case ELEMBLINK:{ 
-									
-		}break;
-		default:break;
-	}
-	SetHLine(g_HLine);
-
-}

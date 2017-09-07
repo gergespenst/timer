@@ -40,18 +40,16 @@ void TestBlink(){
 int8_t test = 1;
 
 void TestInc(){
-DisplayAllDigits();
+DisplayAllSeg();
 
 }
 
 void Test(){
-	SetBlinkDigitPart(1,0xFF);
+	;
 	CHANGE_BLINK_STATE();
 }
 
-void BlinkDigits(){
-	BlinkDigitPart(1);
-}
+
 
 void PressFunc(int8_t key){
 	if (KEY2 == key)
@@ -76,13 +74,13 @@ int main(void)
 	INIT_BLINK_DIODE();
 	Init7Seg();
 	//InitClock();
-	//InitKeyboard(PressFunc,LongPressFunc);
+	InitKeyboard(PressFunc,LongPressFunc);
 	/*END: INIT SECTION*/
 	sei();
 	StartDispatcherTimer();
 
 	//AddTask(TestBlink,0,2000);
-	AddTask(DisplayAllDigits,0,4);
+	AddTask(DisplayAllSeg,0,4);
 	AddTask(ScanKeyboard,0,200);
 	AddTask(BlinkAllSeg,500,500);
 	//AddTask(UpdateTime,500,500);

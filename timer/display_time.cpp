@@ -37,14 +37,14 @@ void InitClock()
 
 void DisplayHours( int8_t hour )
 {
-	SetDigit(0,hour/10);
-	SetDigit(1,hour%10);
+	SetDigit(0,hour/10,ELEMON);
+	SetDigit(1,hour%10,ELEMON);
 }
 
 void DisplayMinute( int8_t min )
 {
-	SetDigit(3,min/10);
-	SetDigit(4,min%10);
+	SetDigit(3,min/10,ELEMON);
+	SetDigit(4,min%10,ELEMON);
 }
 
 
@@ -52,44 +52,28 @@ void BlinkTime()
 {
 
 }
-void BlinkMinTask(){
-	BlinkDigitPart(3);
-	BlinkDigitPart(4);
-}
+
 
 void StartBlinkMinute()
 {
-	SetBlinkDigitPart(3,0xFF & ~_BV(ANODEP));
-	SetBlinkDigitPart(4,0xFF & ~_BV(ANODEP));
-	AddTask(BlinkMinTask,0,500);
+	SetDigit(3,g_date.minute/10,ELEMBLINK);
+	SetDigit(4,g_date.minute%10,ELEMBLINK);
+	
 }
 
-void BlinkHoursTask(){
-	BlinkDigitPart(0);
-	BlinkDigitPart(1);
-}
 
 void StartBlinkHours()
 {
-	SetBlinkDigitPart(0,0xFF & ~_BV(ANODEP));
-	SetBlinkDigitPart(1,0xFF & ~_BV(ANODEP));
-	AddTask(BlinkHoursTask,0,500);
+	SetDigit(0,g_date.hour/10,ELEMBLINK);
+	SetDigit(1,g_date.hour%10,ELEMBLINK);
+	
 }
 
-void ShowTimeTask(){
-	BlinkDigitPart(2);
-	DisplayHours(g_date.hour);
-	DisplayMinute(g_date.minute);
-}
+
 
 void StartShowTime()
 {
-	SetHLineElements(ELEM_DOT,ELEMON);
-	SetLLineElements(ELEM_DOT|ELEM0,ELEMON);//«ажигаем индикатор режима часов
 	
-	SetBlinkDigitPart(2,0b11000000);//ставим маску на мигание точек
-	
-	AddTask(ShowTimeTask,0,500);//запускаем задачу мигать точками и обновл€ть цифры
 }
 
 void StopShowTime()

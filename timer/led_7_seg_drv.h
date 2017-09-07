@@ -54,21 +54,24 @@
 #define ELEMON	0x01
 #define ELEMBLINK 0x02
 
-void Init7Seg();
-void SetDigit(int8_t digit, int8_t value);
-void SetDigit( int8_t digit, int8_t value, int8_t state);
+void Init7Seg();											
+	//Инициализация индикатора, конфигурирует порты и выводит 0123
+void SetDigit( int8_t digit, int8_t value, int8_t state);	
+	//Установка значения цифры, digit - номер цифры (0..3), value - значение цифры (0..E, F - выключена), state - вкл, выкл, мигает
 void SetDots(int8_t dots,int8_t state);
+	//Управление точками можно управлять сразу обеими, писать через |, state - аналогично
 void UpdateSegments();
+	//Преобразует значения цифр точек и линий в физические выводы дисплея
 void SetSegmentRaw(int8_t segment,int8_t rawVal);
-void DisplayAllDigits();
-void SetBlinkDigitPart(int8_t digit,int8_t part);
-void BlinkDigitPart(int8_t digit);
+	//Прямая запись в дисплей в обход установок цифр
+void DisplayAllSeg();
+	//Функция отрисовки сегментов, запускать как задачу или в основном цикле каждые 4 мс для немигающего отображения.
 void BlinkAllSeg();
-void SetHLine(int8_t elements);
-void SetHLine(int8_t elements,int8_t state);
-void SetHLineElements(int8_t element,int8_t state);
-void SetLLine(int8_t elements);
-void SetLLine(int8_t elements,int8_t state);
-void SetLLineElements(int8_t element,int8_t state);
+	//Функция мигания дисплея, мигают те сегменты что установлены как blink. Запускать как задачу с периодом мигания.
+void SetHLineElements(int8_t elements,int8_t state);
+	//Управление элементами верхней строки, можно сразу несколькими - записывать через |
+void SetLLineElements(int8_t elements,int8_t state);
+	//Управление элементами нижней строки, можно сразу несколькими - записывать через |
+
 
 #endif /* LED_7_SEG_DRV_H_ */
