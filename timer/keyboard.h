@@ -22,10 +22,10 @@
 #define KEY0	1
 #define KEY1	2
 #define KEY2	4
-#define LONG_PRESS 20
+#define LONG_PRESS 10 //Длительность долгого нажатия в периодах запуска процедуры сканирвоания кнопок
 
-void InitKeyboard(FPTR press,FPTR long_press);
-void ScanKeyboard();
+void InitKeyboard(FPTR press,FPTR long_press);//инициализация порта и передача обработчиков нажатия кнопок
+void ScanKeyboard();//ПРоцедура сканирования кнопок, запускать в основном цикле или как задачу.
 
 
 #endif //__KEYBOARD_H__

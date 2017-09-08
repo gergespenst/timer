@@ -26,6 +26,7 @@ void DisplayClock();
 
 uint8_t ClockLongPress(uint8_t key);
 uint8_t ClockPress(uint8_t key);
+void SetTimeToRTC();
 
 
 
