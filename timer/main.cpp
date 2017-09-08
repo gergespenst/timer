@@ -49,23 +49,69 @@ void Test(){
 	CHANGE_BLINK_STATE();
 }
 
+#define NMODES 5
+int8_t g_mode = 0;
+
 
 
 void PressFunc(int8_t key){
-	if (KEY2 == key)
-	{
-		StopShowTime();
+	uint8_t retval = 1;
+	switch (g_mode){
+		case 0:retval = ClockPress(key);break;
+		default: retval = 0;break;
 	}
+	
+
+ 	if(!retval) {	
+		switch (key){
+			case KEY0:{
+				(g_mode > 0)?(g_mode--):(g_mode = NMODES -1);
+				SetHLineElements(ALLELEM,ELEMOFF);
+				SetHLineElements(key,ELEMON);
+			}break;
+			case KEY1:break;
+			case KEY2:{
+				(g_mode < NMODES - 1)?(g_mode++):(g_mode = 0);
+				SetHLineElements(ALLELEM,ELEMOFF);
+				SetHLineElements(key,ELEMON);
+			}break;
+		}
+	 }
+
+	SetLLineElements(ALLELEM,ELEMOFF);
+	SetLLineElements(_BV(g_mode),ELEMON);
 	
 	};
 	
 void LongPressFunc(int8_t key){
-	if (KEY0 == key )
-	{
-		StartBlinkHours();
+	uint8_t retval = 1;
+	switch (g_mode){
+		case 0:retval = ClockLongPress(key);break;
+		default: retval = 0;break;
 	}
-		SetLLineElements(ELEM1,ELEMON);
-	};
+	
+
+	if(!retval) {
+		switch (key){
+			case KEY0:{
+				
+			}break;
+			case KEY1:break;
+			case KEY2:{
+			}break;
+		}
+	SetLLineElements(ELEM1,ELEMON);
+	}
+	
+	CHANGE_BLINK_STATE();
+};
+	
+void DisplayMode(){
+	switch(g_mode){
+	case 0: DisplayClock();break;
+	default:break;
+	}
+}
 	
 	
 int main(void)
@@ -73,7 +119,7 @@ int main(void)
     /* INIT SECTION*/
 	INIT_BLINK_DIODE();
 	Init7Seg();
-	//InitClock();
+	InitClock();
 	InitKeyboard(PressFunc,LongPressFunc);
 	/*END: INIT SECTION*/
 	sei();
@@ -81,10 +127,12 @@ int main(void)
 
 	//AddTask(TestBlink,0,2000);
 	AddTask(DisplayAllSeg,0,4);
+	AddTask(DisplayMode,0,50);
 	AddTask(ScanKeyboard,0,200);
 	AddTask(BlinkAllSeg,500,500);
-	//AddTask(UpdateTime,500,500);
-	//StartShowTime();
+	AddTask(UpdateTime,500,500);
+	StartShowTime();
+
 
 	//AddTask(BlinkDigits,0,500);
 	

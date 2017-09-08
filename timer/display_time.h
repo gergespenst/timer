@@ -11,6 +11,7 @@
 
 #include "led_7_seg_drv.h"
 #include "task_query.h"
+#include "keyboard.h"
 
 void InitClock();
 void DisplayHours(int8_t hour);
@@ -22,6 +23,9 @@ void StartShowTime();
 void StopShowTime();
 void UpdateTime();
 void DisplayClock();
+
+uint8_t ClockLongPress(uint8_t key);
+uint8_t ClockPress(uint8_t key);
 
 
 

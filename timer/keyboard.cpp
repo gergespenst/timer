@@ -26,23 +26,26 @@ void ScanKeyboard()
 	int8_t temp_key = ~( ((PIN(KEYPORT) & _BV(PINKEY0)) >> PINKEY0) |
 				 ((PIN(KEYPORT) & _BV(PINKEY1)) >> PINKEY1)<<1 |
 				 ((PIN(KEYPORT) & _BV(PINKEY2)) >> PINKEY2)<<2 ) & ((KEY0)|(KEY1)|(KEY2));
-	if (temp_key == pressed_key)
+	if (temp_key == (pressed_key & 0x0F))
 	{		
-		if ((press_counter > LONG_PRESS) & (pressed_key != NOP))
+		if ((press_counter > LONG_PRESS) && ((pressed_key & 0x0F) != NOP))
 		{
-			(*long_press_func)(pressed_key);
-			pressed_key = NOP;
+			(*long_press_func)(pressed_key & 0x0F);
+			pressed_key |= 0x80;
 			press_counter = 0;
 		}else
+		{
 			press_counter++;
+		}
 	}else
 	{
+
+		if (((pressed_key & 0x0F) != NOP) && ( (pressed_key & 0xF0) == 0))
+		{
+			(*press_func)(pressed_key & 0x0F);
+		}
 		press_counter = 0;
 		pressed_key = temp_key;
-		if (pressed_key != NOP)
-		{
-			(*press_func)(pressed_key);
-		}
 		
 	}
 }

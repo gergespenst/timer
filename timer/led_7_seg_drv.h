@@ -40,11 +40,18 @@
 #define ANODEG		7
 #define ANODEP		3
 
-#define ELEM0 0x01
-#define ELEM1 0x02
-#define ELEM2 0x04
-#define ELEM3 0x10
-#define ELEM4 0x20
+// #define ELEM0 0x01
+// #define ELEM1 0x02
+// #define ELEM2 0x04
+// #define ELEM3 0x10
+// #define ELEM4 0x20
+// #define ALLELEM (ELEM0 | ELEM1 | ELEM2 | ELEM3 | ELEM4)
+enum ELEMENTS {	ELEM0 = 0x01,
+				ELEM1 = 0x02,
+				ELEM2 = 0x04,
+				ELEM3 = 0x08, 
+				ELEM4 = 0x10,
+				ALLELEM = 0x1F};
 #define ELEM_DOT 0x40
 
 #define DOTH 0x01

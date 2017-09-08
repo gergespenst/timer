@@ -5,16 +5,7 @@
  *  Author: USER
  */ 
 #include "led_7_seg_drv.h"
-struct ELEMENT {
-	int8_t mask;
-	int8_t digit;
-	bool digitOn;
-	};
-ELEMENT g_elements[5];
-static int8_t g_HLine,g_LLine,g_LLineMask;
-int8_t	blink_mask[5] ={0x00,0x00,0x00,0,0},
-		current_blink_mask[5] = {0,0,0,0,0};
-			
+
 struct SEGDISP {
 	uint8_t segments[5];		//физические сегменты
 	uint8_t segmentsMask[5];	//маска физических егментов
