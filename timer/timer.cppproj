@@ -188,6 +188,18 @@
     <Compile Include="display_time.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="ds1307.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ds1307.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="IncFile1.h">
       <SubType>compile</SubType>
     </Compile>
@@ -204,6 +216,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="main.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="task_query.cpp">

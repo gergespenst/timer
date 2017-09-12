@@ -12,6 +12,8 @@
 #include "display_time.h"
 #include "util.h"
 #include "keyboard.h"
+#include "i2c.h"
+#include "ds1307.h"
 
 #define TIMER_CONST (0xFF - F_CPU/1024000L )
 
@@ -121,20 +123,24 @@ int main(void)
 	Init7Seg();
 	InitClock();
 	InitKeyboard(PressFunc,LongPressFunc);
+	IICInit();
+	
+	
 	/*END: INIT SECTION*/
 	sei();
 	StartDispatcherTimer();
 
 	//AddTask(TestBlink,0,2000);
+	/*Fill task query*/
 	AddTask(DisplayAllSeg,0,4);
 	AddTask(DisplayMode,0,50);
 	AddTask(ScanKeyboard,0,200);
 	AddTask(BlinkAllSeg,500,500);
-	AddTask(UpdateTime,500,500);
+	AddTask(UpdateTime,2000,2000);
+	/*END: Fill */
+	
 	StartShowTime();
 
-
-	//AddTask(BlinkDigits,0,500);
 	
     while (1) Dispatcher(); 
 	

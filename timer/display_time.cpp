@@ -3,6 +3,7 @@
 *
 * Created: 05.09.2017 15:47:27
 * Author: USER
+*TODO: Добавить возвращение в режим часов после простоя в другом режиме
 */
 
 
@@ -20,26 +21,18 @@ static struct DATE{
 
 static struct CLOCK{
 	DATE date;
-	uint8_t digit[2];
+	int8_t digit[2];
 	uint8_t dot:2;
 	uint8_t edit_digit:2;
 	uint8_t disp_mode:2;
+	
 	} g_clock;
 
 enum CLOKMODE {TIME_MOD,DATE_MOD,YEAR_MOD};
 
 void InitClock()
 {
-	//Update time
-	g_clock.date.hour = 1;
-	g_clock.date.minute = 2;
-	g_clock.date.second = 3;
-	g_clock.date.date = 15;
-	g_clock.date.numday = 5;
-	g_clock.date.month = 12;
-	g_clock.date.year = 17;
 	g_clock.edit_digit = 0;
-	//
 	UpdateTime(); 
 	AddTask(UpdateTime,30000,30000);
 	
@@ -65,26 +58,7 @@ void StopShowTime()
 	SetDots(DOTH|DOTL,ELEMOFF);
 }
 
-void UpdateTime()
-{
-	if (g_clock.edit_digit == 0)
-	{
-
-
-	
-//Вместо этого должен быть запрос времени от RTC
-		if (g_clock.date.minute == 59)
-		{
-			(g_clock.date.hour > 23)?(g_clock.date.hour = 0):(g_clock.date.hour++);
-		}
-		(g_clock.date.minute >= 59)?( g_clock.date.minute = 0):( g_clock.date.minute++);
-//////////////////////////////////////////////////////////////////////////
-	}
-		
-}
-
-void DisplayClock()
-{
+void UpdateDigit(){
 	switch(g_clock.disp_mode){
 		default:
 		case TIME_MOD :{
@@ -104,9 +78,47 @@ void DisplayClock()
 			g_clock.dot = DOTH;
 		}break;
 
+	}	
+}
+
+
+void UpdateTime()
+{
+	if (g_clock.edit_digit == 0)
+	{	
+//Вместо этого должен быть запрос времени от RTC
+// 		if (g_clock.date.minute == 59)
+// 		{
+// 			(g_clock.date.hour > 23)?(g_clock.date.hour = 0):(g_clock.date.hour++);
+// 		}
+// 		(g_clock.date.minute >= 59)?( g_clock.date.minute = 0):( g_clock.date.minute++);
+		uint8_t tempByte;
+		DS1307Read(SECREG,&tempByte);
+		if (tempByte & CLOCHALT) g_clock.edit_digit = 0x02;//если выключены клоки в RTC то переходим к редактированию времени
+		DS1307Read(MINREG,&tempByte);
+		g_clock.date.minute = ( (tempByte & 0x70) >> 4)*10 + (tempByte & 0x0F);
+		DS1307Read(HOURREG,&tempByte);
+		g_clock.date.hour = ( (tempByte & 0x30) >> 4)*10 + (tempByte & 0x0F);
+		DS1307Read(MONTHREG,&tempByte);
+		g_clock.date.month = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+		DS1307Read(YEARREG,&tempByte);
+		g_clock.date.year = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+								
+		DS1307Read(DAYREG,&tempByte);
+		g_clock.date.numday = (tempByte & 0x0F);	
+		
+//////////////////////////////////////////////////////////////////////////
+
+	UpdateDigit();
 	}
+	
+		
+}
+
+void DisplayClock()
+{	
 			
-	if (g_clock.digit[0]/10 == 0)
+	if ( (g_clock.digit[0]/10 == 0) && (g_clock.disp_mode == TIME_MOD))
 	{
 		SetDigit(0,0,ELEMOFF);
 	}else
@@ -128,13 +140,14 @@ uint8_t ClockLongPress( uint8_t key )
 	switch (key){
 		case KEY0:break;
 		case KEY1:{
-					if (g_clock.edit_digit)
+					if (g_clock.edit_digit)//если мигали цифры то убираем мигание и отменяем все изменения
 					{
 						g_clock.edit_digit = 0;
 				
-					}else{
+					}else{//При долгом нажатии включаем мигание и переходим к редактирвоанию времени. Обновляем отображаемые цифры
 						g_clock.disp_mode = TIME_MOD;
 						g_clock.edit_digit = 0x02;
+						UpdateDigit();
 				
 					}
 				return 1;
@@ -146,43 +159,60 @@ uint8_t ClockLongPress( uint8_t key )
 }
 
 uint8_t PressModeKey(){
+	
 	if ( g_clock.edit_digit)//если мигают хоть какието цифры то
 	{
 		if (g_clock.edit_digit & 0x01)// если мигают правые разряды
 		{
-
+			SetTimeToRTC();//записываем установленное время в RTC
 			g_clock.disp_mode++;//значит надо переходить на отображение следующей части времени
-			SetHLineElements(g_clock.disp_mode,ELEMON);
+			
+			
 			if (g_clock.disp_mode > YEAR_MOD)// если перешагнули с отображения года на отображение часов
 			{							// то значит закончилди редактирование часов
 				g_clock.disp_mode = TIME_MOD;
-				g_clock.edit_digit = 0;
-				SetTimeToRTC();//записываем установленное время в RTC
+				g_clock.edit_digit = 0;			
+				UpdateDigit();
 				return 1;
 			}
+			UpdateDigit();
 		}
 
-		g_clock.edit_digit = ~g_clock.edit_digit;
+		
+		(g_clock.edit_digit == 0x02)?(g_clock.edit_digit = 0x01):(g_clock.edit_digit = 0x02);
+		
 		return 1;
 	}else//если цифры не мигают то меняем режим отображения и возвращаем результат "обработано"
 	{
 		g_clock.disp_mode++ ;
+		UpdateDigit();
 		return 1;
 	}
 }
 
 void ChangeDigit(uint8_t sign){//0 - '+', 1 - '-'
+	if(sign)
+		g_clock.digit[2 - g_clock.edit_digit] = g_clock.digit[2 - g_clock.edit_digit] - 1;
+	else
+		g_clock.digit[2 - g_clock.edit_digit] = g_clock.digit[2 - g_clock.edit_digit] + 1;
+		
 	switch(g_clock.disp_mode){
 		default:
 		case TIME_MOD:{
-			
-			
+			if(g_clock.digit[0] > 23) (g_clock.digit[0] = 0);
+			if(g_clock.digit[0] < 0 ) (g_clock.digit[0] = 23);
+			if(g_clock.digit[1] > 59) (g_clock.digit[1] = 0);
+			if(g_clock.digit[1] < 0 ) (g_clock.digit[1] = 59);
 			}break;
 		case DATE_MOD:{
-			
+			if(g_clock.digit[0] > 31) (g_clock.digit[0] = 1);
+			if(g_clock.digit[0] < 1 ) (g_clock.digit[0] = 31);
+			if(g_clock.digit[1] > 12) (g_clock.digit[1] = 1);
+			if(g_clock.digit[1] < 1 ) (g_clock.digit[1] = 12);
 			}break;
 		case YEAR_MOD:{
-			
+			if(g_clock.digit[0] > 7) (g_clock.digit[0] = 1);
+			if(g_clock.digit[0] < 1 ) (g_clock.digit[0] = 7);
 			}break;
 	}
 }
@@ -194,7 +224,8 @@ uint8_t ClockPress( uint8_t key )
 	switch (key){
 		case KEY0:{//
 				if (g_clock.edit_digit){//если мигают цифры то уменьшаем число
-					
+					ChangeDigit(1);
+					return 1;
 				}
 				else{//иначе гасим часы и отдаем обработку обработчику более высокого уровня
 					StopShowTime();
@@ -209,7 +240,8 @@ uint8_t ClockPress( uint8_t key )
 			
 		case KEY2:{
 					if (g_clock.edit_digit){
-						
+						ChangeDigit(0);
+						return 1;
 					}
 					else{//иначе гасим часы и отдаем обработку обработчику более высокого уровня
 						StopShowTime();
@@ -225,4 +257,31 @@ uint8_t ClockPress( uint8_t key )
 void SetTimeToRTC()
 {
  //Заглушка для установки времени в RTC
-}
+ // в зависимости от режима переписываем цифры в регистры
+	
+		 switch(g_clock.disp_mode){
+			 case TIME_MOD :{
+				 g_clock.date.hour = g_clock.digit[0];	 
+				 g_clock.date.minute = g_clock.digit[1];
+		
+					DS1307Write(MINREG, ( (g_clock.digit[1]/10)<<4 )|( (g_clock.digit[1]%10) ) );
+					DS1307Write(HOURREG,( (g_clock.digit[0]/10)<<4 )|( (g_clock.digit[0]%10) ) );
+					DS1307Write(SECREG,0x00);//сбрасываем секунды и запускаем клоки
+			 }break;
+			 case DATE_MOD:{
+				 g_clock.date.date = g_clock.digit[0];
+				 g_clock.date.month = g_clock.digit[1];
+					DS1307Write(MONTHREG, ( (g_clock.digit[1]/10)<<4 )|( (g_clock.digit[1]%10) ) );
+					DS1307Write(DATEREG,( (g_clock.digit[0]/10)<<4 )|( (g_clock.digit[0]%10) ) );
+										
+			 }break;
+			 case YEAR_MOD:{
+				g_clock.date.numday = g_clock.digit[0];
+				g_clock.date.year = g_clock.digit[1];
+					DS1307Write(YEARREG,( (g_clock.digit[1]/10)<<4 )|( (g_clock.digit[1]%10) ) );
+					DS1307Write(DAYREG,  (g_clock.digit[0]%10) );
+			 }break;
+		}
+	
+	
+ }

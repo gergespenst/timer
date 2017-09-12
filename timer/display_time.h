@@ -12,6 +12,7 @@
 #include "led_7_seg_drv.h"
 #include "task_query.h"
 #include "keyboard.h"
+#include "ds1307.h"
 
 void InitClock();
 void DisplayHours(int8_t hour);
