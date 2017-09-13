@@ -17,12 +17,7 @@
 
 #define TIMER_CONST (0xFF - F_CPU/1024000L )
 
-#define BLINK_PIN 0
-#define BLINK_PORT PORTB
 
-
-#define INIT_BLINK_DIODE()				DDR(BLINK_PORT) |= _BV(BLINK_PIN)
-#define CHANGE_BLINK_STATE()			PORT(BLINK_PORT) ^= _BV(BLINK_PIN)
 
 void StartDispatcherTimer(){//запуск таймера для диспетчера задач
 	TCCR0 =  _BV(CS00) | _NBV(CS01) | _BV(CS02);
@@ -36,9 +31,7 @@ ISR(TIMER0_OVF_vect){//при переполнении вызываем шаг по времени
 }
 
 
-void TestBlink(){
-	CHANGE_BLINK_STATE();
-}
+
 int8_t test = 1;
 
 void TestInc(){
@@ -46,12 +39,11 @@ DisplayAllSeg();
 
 }
 
-void Test(){
-	;
-	CHANGE_BLINK_STATE();
-}
+
 
 #define NMODES 5
+#define CLOCKMODE  0x00
+#define TIMER1MODE 0x01
 int8_t g_mode = 0;
 
 
@@ -59,36 +51,35 @@ int8_t g_mode = 0;
 void PressFunc(int8_t key){
 	uint8_t retval = 1;
 	switch (g_mode){
-		case 0:retval = ClockPress(key);break;
+		case CLOCKMODE: retval = ClockPress(key);break;
+			case 1:
+			case 2:
+			case 3:
+			case 4: retval = AlarmPress(g_mode - 1,key);break;
 		default: retval = 0;break;
 	}
-	
 
  	if(!retval) {	
 		switch (key){
 			case KEY0:{
-				(g_mode > 0)?(g_mode--):(g_mode = NMODES -1);
-				SetHLineElements(ALLELEM,ELEMOFF);
-				SetHLineElements(key,ELEMON);
+				(g_mode > CLOCKMODE)?(g_mode--):(g_mode = NMODES -1);
 			}break;
 			case KEY1:break;
 			case KEY2:{
-				(g_mode < NMODES - 1)?(g_mode++):(g_mode = 0);
-				SetHLineElements(ALLELEM,ELEMOFF);
-				SetHLineElements(key,ELEMON);
+				(g_mode < NMODES - 1)?(g_mode++):(g_mode = CLOCKMODE);
 			}break;
 		}
 	 }
-
-	SetLLineElements(ALLELEM,ELEMOFF);
-	SetLLineElements(_BV(g_mode),ELEMON);
-	
-	};
+};
 	
 void LongPressFunc(int8_t key){
 	uint8_t retval = 1;
 	switch (g_mode){
-		case 0:retval = ClockLongPress(key);break;
+		case CLOCKMODE:retval = ClockLongPress(key);break;
+			case 1:
+			case 2:
+			case 3:
+			case 4:retval = AlarmLongPress(g_mode - 1,key);break;
 		default: retval = 0;break;
 	}
 	
@@ -102,15 +93,17 @@ void LongPressFunc(int8_t key){
 			case KEY2:{
 			}break;
 		}
-	SetLLineElements(ELEM1,ELEMON);
 	}
-	
-	CHANGE_BLINK_STATE();
+
 };
 	
 void DisplayMode(){
 	switch(g_mode){
 	case 0: DisplayClock();break;
+	case 1:
+	case 2:
+	case 3:
+	case 4: DisplayAlarm(g_mode - 1);break;
 	default:break;
 	}
 }
@@ -119,9 +112,9 @@ void DisplayMode(){
 int main(void)
 {
     /* INIT SECTION*/
-	INIT_BLINK_DIODE();
 	Init7Seg();
 	InitClock();
+	InitAlarm();
 	InitKeyboard(PressFunc,LongPressFunc);
 	IICInit();
 	
@@ -136,7 +129,7 @@ int main(void)
 	AddTask(DisplayMode,0,50);
 	AddTask(ScanKeyboard,0,200);
 	AddTask(BlinkAllSeg,500,500);
-	AddTask(UpdateTime,2000,2000);
+	//AddTask(UpdateTime,500,500);
 	/*END: Fill */
 	
 	StartShowTime();

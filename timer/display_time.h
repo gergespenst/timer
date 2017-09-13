@@ -13,6 +13,12 @@
 #include "task_query.h"
 #include "keyboard.h"
 #include "ds1307.h"
+#include <avr/eeprom.h>
+
+void InitAlarm();
+void DisplayAlarm(uint8_t alarm);
+uint8_t AlarmLongPress(uint8_t alarm, uint8_t key);
+uint8_t AlarmPress(uint8_t alarm,uint8_t key);
 
 void InitClock();
 void DisplayHours(int8_t hour);

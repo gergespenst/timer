@@ -36,9 +36,9 @@ int8_t segDigit[] = {
 	0x77,//A
 	0x7C,//b
 	0x39,//C
-	0x5E,//d
+	0x00,//d//вместо d отображаем пустоту для экономии (OFFSYM)
 	0x79,//E
-	0x00,//F//вместо F отображаем пустоту для экономии
+	0x71,//F
 	0x54,//n
 	0x5C,//o
 	0x73,//P
@@ -47,7 +47,7 @@ int8_t segDigit[] = {
 	0x1C,//u
 	0x00	
 };
-
+#define OFFSYM 0x0D
 #define GET_BIT(x,nbit)		(((x)&_BV(nbit)) == _BV(nbit))
 #define CONVERT_DIGIT(x) ((GET_BIT(segDigit[(x)],0)<<ANODEA)|(GET_BIT(segDigit[(x)],1)<<ANODEB)|(GET_BIT(segDigit[(x)],2)<<ANODEC)|\
 						 (GET_BIT(segDigit[(x)],3)<<ANODED)|(GET_BIT(segDigit[(x)],4)<<ANODEE)|(GET_BIT(segDigit[(x)],5)<<ANODEF)|\
@@ -74,8 +74,8 @@ void SetDigit( int8_t digit, int8_t value, int8_t state)
 		g_indicator.digit[digit/2] = (g_indicator.digit[digit/2] & (0xF0 >> 4*(digit%2))) | (value & 0x0F)<<4*(digit%2);
 	switch(state)	{
 		case ELEMOFF:{						//обнуляем в зависимости от номера цифры старший или младший полубайт и помещаем туда сдвинутую цифру
-				g_indicator.digit[digit/2] = (g_indicator.digit[digit/2] & (0xF0 >> 4*(digit%2))) | (0x0F <<4*(digit%2));
-		}break;																				// TODO: Для экономии считаем что F - выключение цифры
+				g_indicator.digit[digit/2] = (g_indicator.digit[digit/2] & (0xF0 >> 4*(digit%2))) | (OFFSYM <<4*(digit%2));
+		}break;																				// TODO: Для экономии считаем что OFFSYM - выключение цифры
 		case ELEMON:{	
 				g_indicator.digitMask[digit/2] = (g_indicator.digitMask[digit/2] & (0xF0 >>4*(digit%2)));
 		}break;
