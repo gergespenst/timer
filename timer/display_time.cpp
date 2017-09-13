@@ -8,7 +8,7 @@
 
 
 #include "display_time.h"
-
+#define UPDATETIME 500
 static struct DATE{
 	int8_t	hour,
 			minute,
@@ -31,7 +31,7 @@ static struct CLOCK{
 enum CLOKMODE {TIME_MOD,DATE_MOD,YEAR_MOD};
 //////////////////////////////////////////////////////////////////////////
 enum ALARMMODE {COUNTER_MOD,START_TIME_MOD,PERIOD_MOD};
-	
+typedef void (*AFPTR)(uint8_t);
 static int8_t alarmDigit[2];//цифры для вывода на экран общие для всех
 
 struct ALARM{
@@ -39,6 +39,7 @@ struct ALARM{
 	uint8_t startMin;		//минута начала включения нагрузки
 	uint16_t alarmPeriod;	//продолжительность включенного состояния в минутах, до 24 часов (1440 (0x05A0) минут)
 							//старшие 4 бита - флаг выключенности таймера 0 - выключен, иначе - включен
+	AFPTR alarmFunc;
 	uint16_t alarmOnCounter;//счетчик продолжительности включенного состояния
 	uint8_t alarmEdit:2;		//флаг редактирования будильника
 	uint8_t alarmDispMode:2;	//режим редактирования в будильнике: стартовое время или проддолжительность включения
@@ -46,23 +47,29 @@ struct ALARM{
 	};
 	
 #define NUMOFALARMS 4
-#define ALARMEEPROMSTART 0x10
+#define ALARMEEPROMSTART 0x04
 ALARM g_alarms[NUMOFALARMS];
 
 #define LOADPORT PORTB
 #define LOAD0_PIN 0
+#define LOAD1_PIN 1
+#define LOAD2_PIN 2
+#define LOAD3_PIN 3
 
 
 
-#define INIT_LOAD0()				DDR(LOADPORT) |= _BV(LOAD0_PIN)
-#define LOAD0_ON()				PORT(LOADPORT) &= ~_BV(LOAD0_PIN)
-#define LOAD0_OFF()				PORT(LOADPORT) |= _BV(LOAD0_PIN)
+
+
+#define INIT_LOAD()	DDR(LOADPORT) |= _BV(LOAD0_PIN) | _BV(LOAD1_PIN) | _BV(LOAD2_PIN) | _BV(LOAD3_PIN);\
+					LOADPORT |= (_BV(LOAD0_PIN) | _BV(LOAD1_PIN) | _BV(LOAD2_PIN) | _BV(LOAD3_PIN));
+
 
 void SaveAlarmToEEPROM(uint8_t alarm){
 	//TODO: здесь смещение идет на магическую цифру 4, должно быть смещение на количество сохраняемых байт
 	eeprom_update_byte((uint8_t*)(ALARMEEPROMSTART + alarm*4 + 0),g_alarms[alarm].startHour);
 	eeprom_update_byte((uint8_t*)(ALARMEEPROMSTART + alarm*4 + 1),g_alarms[alarm].startMin);
-	eeprom_update_word((uint16_t*)(ALARMEEPROMSTART + alarm*4 + 2),g_alarms[alarm].alarmPeriod);
+	eeprom_update_byte((uint8_t*)(ALARMEEPROMSTART + alarm*4 + 2),(uint8_t)((g_alarms[alarm].alarmPeriod & 0xFF00)>>8) );
+	eeprom_update_byte((uint8_t*)(ALARMEEPROMSTART + alarm*4 + 3),(uint8_t)(g_alarms[alarm].alarmPeriod & 0x00FF));
 }
 
 
@@ -78,14 +85,17 @@ void InitAlarm(){
 			if (g_alarms[i].startHour > 24) g_alarms[i].startHour = 0;
 		g_alarms[i].startMin	=	eeprom_read_byte((uint8_t*)(ALARMEEPROMSTART + i*4 + 1));
 			if (g_alarms[i].startMin > 59) g_alarms[i].startMin = 0;
-		g_alarms[i].alarmPeriod	=	eeprom_read_word((uint16_t*)(ALARMEEPROMSTART+ i*4 + 2));	
-			if (g_alarms[i].alarmPeriod & 0x0FFF > 24*60) g_alarms[i].alarmPeriod = 0;
+		g_alarms[i].alarmPeriod	=	(eeprom_read_byte((uint8_t*)(ALARMEEPROMSTART+ i*4 + 2)) << 8)
+									+ eeprom_read_byte((uint8_t*)(ALARMEEPROMSTART+ i*4 + 3));	
+			if ((g_alarms[i].alarmPeriod & 0x0FFF) > 24*60) g_alarms[i].alarmPeriod = 0;
 			
 		//////////////////////////////////////////////////////////////////////////
-		//TODO: конфигурирование портов нагрузки
-		INIT_LOAD0();
-		LOAD0_OFF();
+		
+		
 	}
+	//конфигурирование портов нагрузки
+	INIT_LOAD();
+	AddTask(AlarmsCheck,0,UPDATETIME);
 }
 
 
@@ -118,7 +128,18 @@ void UpdateAlarmDigit(uint8_t alarm){
 	}	
 }
 
+void AlarmFunc(uint8_t alarm,uint8_t state){
+		if(state == ELEMOFF){
+			LOADPORT |= _BV(alarm);
+		}
+		else{
+			LOADPORT &= ~_BV(alarm);
+		}
+		
+}
+
 void AlarmsCheck(){
+	
 	for (uint8_t i = 0; i < NUMOFALARMS; i++)
 	{
 		if ( 
@@ -133,16 +154,19 @@ void AlarmsCheck(){
 		if ((g_alarms[i].alarmOnCounter != 0) && ( (g_alarms[i].alarmPeriod & 0xF000)>>12))//если тикает таймер до окнчания и таймер не выключен 
 		{
 			//TODO: ВКЛЮЧАЕМ НАГРУЗКУ
-			LOAD0_ON();
-			g_alarms[i].alarmOnCounter++;
-			if (g_alarms[i].alarmOnCounter >= (g_alarms[i].alarmPeriod & 0x0FFF))//если досчитали до более чем период то выключаем все
+			AlarmFunc(i,ELEMON);			
+			if (g_alarms[i].alarmOnCounter > (g_alarms[i].alarmPeriod & 0x0FFF))//если досчитали до более чем период то выключаем все
 			{
 				g_alarms[i].alarmOnCounter = 0;
-				LOAD0_OFF();
 				//TODO: ВЫКЛЮЧАЕМ НАГРУЗКУ
-			}
+				AlarmFunc(i,ELEMOFF);			
+			}else
+				g_alarms[i].alarmOnCounter++;
 		}
-		
+		if ( ((g_alarms[i].alarmPeriod & 0xF000)>>12) == 0)//если таймер выключен то принудительно выключаем нагрузку
+		{
+			AlarmFunc(i,ELEMOFF);		
+		}
 	}
 		
 }
@@ -246,6 +270,7 @@ uint8_t AlarmPress(uint8_t alarm,uint8_t key){
 						g_alarms[alarm].alarmPeriod = (g_alarms[alarm].alarmPeriod & 0xF000) |
 														 alarmDigit[0]*60 + alarmDigit[1];
 					}
+					
 					g_alarms[alarm].alarmDispMode++;
 					UpdateAlarmDigit(alarm);
 					if (g_alarms[alarm].alarmDispMode > PERIOD_MOD)//если ушли с периода то значит закончили редактирование
@@ -282,8 +307,7 @@ uint8_t AlarmPress(uint8_t alarm,uint8_t key){
 void InitClock()
 {
 	g_clock.edit_digit = 0;
-	UpdateTime(); 
-	AddTask(UpdateTime,500,500);
+	AddTask(UpdateTime,0,UPDATETIME);
 	
 }
 
@@ -332,32 +356,34 @@ void UpdateTime()
 	if (g_clock.edit_digit == 0)
 	{	
 //Вместо этого должен быть запрос времени от RTC
-		if (g_clock.date.minute == 59)
+#if 1
+	if (g_clock.date.minute == 59)
 		{
 			(g_clock.date.hour > 23)?(g_clock.date.hour = 0):(g_clock.date.hour++);
 		}
 		(g_clock.date.minute >= 59)?( g_clock.date.minute = 0):( g_clock.date.minute++);
-// 		uint8_t tempByte;
-// 		DS1307Read(SECREG,&tempByte);
-// 		if (tempByte & CLOCHALT) g_clock.edit_digit = 0x02;//если выключены клоки в RTC то переходим к редактированию времени
-// 		DS1307Read(MINREG,&tempByte);
-// 		g_clock.date.minute = ( (tempByte & 0x70) >> 4)*10 + (tempByte & 0x0F);
-// 		DS1307Read(HOURREG,&tempByte);
-// 		g_clock.date.hour = ( (tempByte & 0x30) >> 4)*10 + (tempByte & 0x0F);
-// 		DS1307Read(MONTHREG,&tempByte);
-// 		g_clock.date.month = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-// 		DS1307Read(DATEREG,&tempByte);
-// 		g_clock.date.date = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-// 		DS1307Read(YEARREG,&tempByte);
-// 		g_clock.date.year = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-// 								
-// 		DS1307Read(DAYREG,&tempByte);
-// 		g_clock.date.numday = (tempByte & 0x0F);	
-		
+#else
+		uint8_t tempByte;
+		DS1307Read(SECREG,&tempByte);
+		if (tempByte & CLOCHALT) g_clock.edit_digit = 0x02;//если выключены клоки в RTC то переходим к редактированию времени
+		DS1307Read(MINREG,&tempByte);
+		g_clock.date.minute = ( (tempByte & 0x70) >> 4)*10 + (tempByte & 0x0F);
+		DS1307Read(HOURREG,&tempByte);
+		g_clock.date.hour = ( (tempByte & 0x30) >> 4)*10 + (tempByte & 0x0F);
+		DS1307Read(MONTHREG,&tempByte);
+		g_clock.date.month = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+		DS1307Read(DATEREG,&tempByte);
+		g_clock.date.date = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+		DS1307Read(YEARREG,&tempByte);
+		g_clock.date.year = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+			
+		DS1307Read(DAYREG,&tempByte);
+		g_clock.date.numday = (tempByte & 0x0F);	
+#endif		
 //////////////////////////////////////////////////////////////////////////
 
 	UpdateDigit();
-	AlarmsCheck();
+	
 	}		
 }
 
