@@ -142,30 +142,43 @@ void AlarmsCheck(){
 	
 	for (uint8_t i = 0; i < NUMOFALARMS; i++)
 	{
-		if ( 
-			 ((g_clock.date.hour == g_alarms[i].startHour) && //если часов столько же и минут столько же или больше
-			 (g_clock.date.minute == g_alarms[i].startMin))
-			  && (g_alarms[i].alarmOnCounter == 0) //но в любом случае обязательно для выключенного события
-			)
-		{//включаем событие увеличением счетчика
-			g_alarms[i].alarmOnCounter = 1;
-					
-		}
-		if ((g_alarms[i].alarmOnCounter != 0) && ( (g_alarms[i].alarmPeriod & 0xF000)>>12))//если тикает таймер до окнчания и таймер не выключен 
+		//если таймер выключен то принудительно выключаем нагрузку чтоб там не было с периодом
+		//и идем на следующую итерацию цикла
+		if ( ((g_alarms[i].alarmPeriod & 0xF000) >> 12) == 0)
 		{
-			//TODO: ВКЛЮЧАЕМ НАГРУЗКУ
-			AlarmFunc(i,ELEMON);			
-			if (g_alarms[i].alarmOnCounter > (g_alarms[i].alarmPeriod & 0x0FFF))//если досчитали до более чем период то выключаем все
-			{
-				g_alarms[i].alarmOnCounter = 0;
-				//TODO: ВЫКЛЮЧАЕМ НАГРУЗКУ
-				AlarmFunc(i,ELEMOFF);			
-			}else
-				g_alarms[i].alarmOnCounter++;
-		}
-		if ( ((g_alarms[i].alarmPeriod & 0xF000)>>12) == 0)//если таймер выключен то принудительно выключаем нагрузку
-		{
-			AlarmFunc(i,ELEMOFF);		
+			AlarmFunc(i,ELEMOFF);	
+			continue;
+		}else{	//если таймер включен то проверяем попадает ли текущее время в интервал [start_time start_time+period]
+				// а) если (время старта + период) меньше 24 часов то нагрузку включаем когда
+				//	  текущее время больше времени старта и меньше времени окончания
+				// б) если (время старта + период) больше 24 часов  то нагрузку включаем когда
+				//    текущее время больше чем время старта или меньше чем время окончания
+				uint16_t startTime = ((uint16_t)g_alarms[i].startHour)*60 + g_alarms[i].startMin;
+				uint16_t stopTime =  startTime + (g_alarms[i].alarmPeriod & 0x0FFF);
+				uint16_t curTime = ((uint16_t)g_clock.date.hour)*60 + g_clock.date.minute;
+				
+				//сичтаем время окончания в количествах минут (24 часа = 1440 минут)
+				if (stopTime < 1440) //вариант А
+				{
+					if ( (curTime >= startTime) && (curTime < stopTime) )
+					{
+						AlarmFunc(i,ELEMON);
+						g_alarms[i].alarmOnCounter = 10;
+					}else{
+						AlarmFunc(i,ELEMOFF);
+						g_alarms[i].alarmOnCounter = 0;
+					}
+				}else{ //вариант Б
+					if ( (curTime >= startTime) || (curTime < (stopTime%1440)) )
+					{
+						AlarmFunc(i,ELEMON);
+						g_alarms[i].alarmOnCounter = 10;
+						}else{
+						AlarmFunc(i,ELEMOFF);
+						g_alarms[i].alarmOnCounter = 0;
+					}					
+				}
+		
 		}
 	}
 		
