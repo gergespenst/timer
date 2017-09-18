@@ -21,7 +21,7 @@
 void InitAlarm();
 void AlarmFunc(uint8_t alarm,uint8_t state);
 void AlarmsCheck();
-void DisplayAlarm(uint8_t alarm);
+void UpdateDispAlarm(uint8_t alarm);
 uint8_t AlarmLongPress(uint8_t alarm, uint8_t key);
 void StopShowAlarm(uint8_t alarm);
 uint8_t AlarmPress(uint8_t alarm,uint8_t key);
@@ -35,7 +35,7 @@ void StartBlinkHours();
 void StartShowTime();
 void StopShowTime();
 void UpdateTime();
-void DisplayClock();
+void UpdateDispClock();
 
 uint8_t ClockLongPress(uint8_t key);
 uint8_t ClockPress(uint8_t key);

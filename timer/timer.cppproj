@@ -38,8 +38,8 @@
         </dependencies>
       </framework-data>
     </AsfFrameworkConfig>
-    <avrtool>com.atmel.avrdbg.tool.stk500</avrtool>
-    <avrtoolserialnumber />
+    <avrtool>com.atmel.avrdbg.tool.ispmk2</avrtool>
+    <avrtoolserialnumber>000200151682</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0x1E9306</avrdeviceexpectedsignature>
     <com_atmel_avrdbg_tool_stk500>
       <ToolOptions>
@@ -54,7 +54,7 @@
       <ToolName>STK500</ToolName>
     </com_atmel_avrdbg_tool_stk500>
     <avrtoolinterface>ISP</avrtoolinterface>
-    <avrtoolinterfaceclock>1843200</avrtoolinterfaceclock>
+    <avrtoolinterfaceclock>1000000</avrtoolinterfaceclock>
     <custom>
       <ToolOptions>
         <InterfaceProperties>
@@ -68,6 +68,17 @@
       </ToolNumber>
       <ToolName>Custom Programming Tool</ToolName>
     </custom>
+    <com_atmel_avrdbg_tool_ispmk2>
+      <ToolOptions>
+        <InterfaceProperties>
+          <IspClock>1000000</IspClock>
+        </InterfaceProperties>
+        <InterfaceName>ISP</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.ispmk2</ToolType>
+      <ToolNumber>000200151682</ToolNumber>
+      <ToolName>AVRISP mkII</ToolName>
+    </com_atmel_avrdbg_tool_ispmk2>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
@@ -182,6 +193,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="display_temp.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="display_temp.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="display_time.cpp">
       <SubType>compile</SubType>
     </Compile>
@@ -219,6 +236,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="OneWire.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="OneWire.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="task_query.cpp">

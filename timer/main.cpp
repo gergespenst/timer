@@ -14,10 +14,10 @@
 #include "keyboard.h"
 #include "i2c.h"
 #include "ds1307.h"
+#include "display_temp.h"
 
+//Конфигурация очереди задач
 #define TIMER_CONST (0xFF - F_CPU/1024000L )
-
-
 
 void StartDispatcherTimer(){//запуск таймера для диспетчера задач
 	TCCR0 =  _BV(CS00) | _NBV(CS01) | _BV(CS02);
@@ -29,21 +29,13 @@ ISR(TIMER0_OVF_vect){//при переполнении вызываем шаг по времени
 	TimerProcess();
 	TCNT0 = TIMER_CONST;
 }
-
-
-
-int8_t test = 1;
-
-void TestInc(){
-DisplayAllSeg();
-
-}
-
+//////////////////////////////////////////////////////////////////////////
 
 
 #define NMODES 5
-#define CLOCKMODE  0x00
-#define TIMER1MODE 0x01
+#define CLOCKMODE	0x00
+#define TIMER1MODE	0x01
+#define TEMP1MODE	0x05
 int8_t g_mode = 0;
 
 //функция которая сбрасывает экран к отображению часов при отсутствии нажатия кнопок 
@@ -58,10 +50,10 @@ void PressFunc(int8_t key){
 	uint8_t retval = 1;
 	switch (g_mode){
 		case CLOCKMODE: retval = ClockPress(key);break;
-			case 1:
-			case 2:
-			case 3:
-			case 4: retval = AlarmPress(g_mode - 1,key);break;
+		case TIMER1MODE:
+		case TIMER1MODE + 1:
+		case TIMER1MODE + 2:
+		case TIMER1MODE + 3: retval = AlarmPress(g_mode - 1,key);break;
 		default: retval = 0;break;
 	}
 
@@ -83,34 +75,33 @@ void LongPressFunc(int8_t key){
 	uint8_t retval = 1;
 	switch (g_mode){
 		case CLOCKMODE:retval = ClockLongPress(key);break;
-			case 1:
-			case 2:
-			case 3:
-			case 4:retval = AlarmLongPress(g_mode - 1,key);break;
+		case TIMER1MODE:
+		case TIMER1MODE + 1:
+		case TIMER1MODE + 2:
+		case TIMER1MODE + 3:retval = AlarmLongPress(g_mode - TIMER1MODE,key);break;
 		default: retval = 0;break;
 	}
 	
 
 	if(!retval) {
 		switch (key){
-			case KEY0:{
-				
-			}break;
+			case KEY0:break;
 			case KEY1:break;
-			case KEY2:{
-			}break;
+			case KEY2:break;
 		}
 	}
 
 };
 	
-void DisplayMode(){
+void UpdateDisplay(){
 	switch(g_mode){
-	case 0: DisplayClock();break;
-	case 1:
-	case 2:
-	case 3:
-	case 4: DisplayAlarm(g_mode - 1);break;
+	case CLOCKMODE: UpdateDispClock();break;
+	case TIMER1MODE:
+	case TIMER1MODE + 1:
+	case TIMER1MODE + 2:
+ 	case TIMER1MODE + 3: UpdateDispAlarm(g_mode - TIMER1MODE);break;
+// 	case TEMP1MODE:
+// 	case TEMP1MODE + 1: UpdateDispTemp(g_mode - TEMP1MODE );break;
 	default:break;
 	}
 }
@@ -118,25 +109,22 @@ void DisplayMode(){
 	
 int main(void)
 {
-    /* INIT SECTION*/
+    /* INIT SECTION
+	Сначала инициализация железа, потом логики*/
 	Init7Seg();
 	InitClock();
 	InitAlarm();
 	InitKeyboard(PressFunc,LongPressFunc);
-	IICInit();
-	
-	
+	InitTemp();
 	/*END: INIT SECTION*/
 	sei();
-	StartDispatcherTimer();
-
-	
+	StartDispatcherTimer();	
 	/*Fill task query*/
 	AddTask(DisplayAllSeg,0,4);
-	AddTask(DisplayMode,0,50);
-	AddTask(ScanKeyboard,0,200);
+	AddTask(UpdateDisplay,0,50);
+	AddTask(ScanKeyboard,0,100);
 	AddTask(BlinkAllSeg,500,500);
-	
+	AddTask(UpdateTemp,0,200);
 	/*END: Fill */
 	
 	StartShowTime();

@@ -18,7 +18,7 @@
 #define IICDDR                DDR(IICPORT)					/*порт управления I2C*/
 #define IICPIN                PIN(IICPORT)					/*порт ввода данных с линий I2C*/
 #define IICSDAPin			  2
-#define IICSDLPin              1
+#define IICSDLPin             1
 
 
 

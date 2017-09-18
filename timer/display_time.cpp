@@ -95,7 +95,7 @@ void InitAlarm(){
 	}
 	//конфигурирование портов нагрузки
 	INIT_LOAD();
-	AddTask(AlarmsCheck,0,UPDATETIME);
+	AddTask(AlarmsCheck,0,UPDATETIME);//TODO: Эта часть должна быть перенесена в main если надо отвязаться от реализации очереди
 }
 
 
@@ -208,7 +208,7 @@ void AlarmsCheck(){
 
 
 
-void DisplayAlarm(uint8_t alarm){
+void UpdateDispAlarm(uint8_t alarm){
 	if (g_alarms[alarm].alarmEdit == 0) UpdateAlarmDigit(alarm);
 	
 		//зажигаем индикатор выбранного аларма
@@ -342,16 +342,17 @@ uint8_t AlarmPress(uint8_t alarm,uint8_t key){
 //////////////////////////////////////////////////////////////////////////
 void InitClock()
 {
+	IICInit();
 	g_clock.date.hour = 0;
 	g_clock.date.minute = 0;
 	g_clock.edit_digit = 0;
-	AddTask(UpdateTime,0,UPDATETIME);
+	AddTask(UpdateTime,0,UPDATETIME);//TODO: Эта часть должна быть перенесена в main если надо отвязаться от реализации очереди
 	
 }
 
 void StartShowTime()
 {	
-	DisplayClock();
+	UpdateDispClock();
 }
 
 void StopShowTime()
@@ -406,23 +407,27 @@ void UpdateTime()
 		uint8_t tempByte;
 		result = DS1307Read(SECREG,&tempByte);
 		if (tempByte & CLOCHALT) g_clock.edit_digit = 0x02;//если выключены клоки в RTC то переходим к редактированию времени
+	
 		result = DS1307Read(MINREG,&tempByte);
 		g_clock.date.minute = ( (tempByte & 0x70) >> 4)*10 + (tempByte & 0x0F);
 		result = DS1307Read(HOURREG,&tempByte);
 		g_clock.date.hour = ( (tempByte & 0x30) >> 4)*10 + (tempByte & 0x0F);
-		result = DS1307Read(MONTHREG,&tempByte);
-		g_clock.date.month = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-		result = DS1307Read(DATEREG,&tempByte);
-		g_clock.date.date = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-		result = DS1307Read(YEARREG,&tempByte);
-		g_clock.date.year = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-			
-		result = DS1307Read(DAYREG,&tempByte);
-		g_clock.date.numday = (tempByte & 0x0F);	
 		
+		if (g_clock.disp_mode != TIME_MOD)//если отображаются часы то можно не париться и не обновлять дату 
+		{		
+			result = DS1307Read(MONTHREG,&tempByte);
+			g_clock.date.month = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+			result = DS1307Read(DATEREG,&tempByte);
+			g_clock.date.date = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+			result = DS1307Read(YEARREG,&tempByte);
+			g_clock.date.year = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
+			
+			result = DS1307Read(DAYREG,&tempByte);
+			g_clock.date.numday = (tempByte & 0x0F);	
+		}
 #endif		
 //////////////////////////////////////////////////////////////////////////
-	if (result == 0x00)
+	if (result == 0x00)//если общение по i2c завершилось ошибкой то выводим абракадабру
 			{
 				g_clock.digit[0] = 33;
 				g_clock.digit[1] = 44;
@@ -432,7 +437,7 @@ void UpdateTime()
 	}		
 }
 
-void DisplayClock()
+void UpdateDispClock()
 {	
 			
 	if ( (g_clock.digit[0]/10 == 0) && (g_clock.disp_mode == TIME_MOD))

@@ -112,16 +112,22 @@ void UpdateSegments(){
 	
 	g_indicator.segments[0] =	(CONVERT_DIGIT( (g_indicator.digit[0] & 0x0F)     ) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLine,0));
 	g_indicator.segments[1] =	(CONVERT_DIGIT( (g_indicator.digit[0] & 0xF0) >> 4) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLine,1));
-	
-	g_indicator.segments[2] =	(g_indicator.HLine & ~(_BV(ANODEP) | ELEM_DOT | (ELEM_DOT<<1))) | (_BV(ANODEP)*GET_BIT(g_indicator.LLine,2))
-																								| g_indicator.dots << 6;
+																							//тут идет магия по престановкам битов под индикатор
+	g_indicator.segments[2] =	(g_indicator.HLine & ~(_BV(ANODEP) | ELEM_DOT | (ELEM_DOT<<1) | (0x10) | (0x20)))
+																	 | (_BV(ANODEP)*GET_BIT(g_indicator.LLine,2))
+																	 | g_indicator.dots << 6
+																	 | (ELEM3<<1)*GET_BIT(g_indicator.HLine,3)
+																	 | (ELEM4<<1)*GET_BIT(g_indicator.HLine,4);
 	g_indicator.segments[3] =	(CONVERT_DIGIT( (g_indicator.digit[1] & 0x0F)     ) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLine,3));
 	g_indicator.segments[4] =	(CONVERT_DIGIT( (g_indicator.digit[1] & 0xF0) >> 4) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLine,4));
 	
 	g_indicator.segmentsMask[0] = (CONVERT_MASK( g_indicator.digitMask[0] & 0x0F       ) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLineMask,0));
 	g_indicator.segmentsMask[1] = (CONVERT_MASK( (g_indicator.digitMask[0] & 0xF0) >> 4) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLineMask,1));
- 	g_indicator.segmentsMask[2] = ( g_indicator.HLineMask &   ~(_BV(ANODEP) | ELEM_DOT | (ELEM_DOT<<1))) | (_BV(ANODEP)*GET_BIT(g_indicator.LLineMask,2))
-																									 | g_indicator.dotsMask << 6;
+ 	g_indicator.segmentsMask[2] = ( g_indicator.HLineMask &   ~(_BV(ANODEP) | ELEM_DOT | (ELEM_DOT<<1) | (0x10) | (0x20))) 
+																		| (_BV(ANODEP)*GET_BIT(g_indicator.LLineMask,2))
+																		| g_indicator.dotsMask << 6
+																		| (ELEM3<<1)*GET_BIT(g_indicator.HLineMask,3)
+																		| (ELEM4<<1)*GET_BIT(g_indicator.HLineMask,4);;
 	g_indicator.segmentsMask[3] = (CONVERT_MASK(  g_indicator.digitMask[1] & 0x0F      ) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLineMask,3));
 	g_indicator.segmentsMask[4] = (CONVERT_MASK( (g_indicator.digitMask[1] & 0xF0) >> 4) & ~_BV(ANODEP)) | (_BV(ANODEP)*GET_BIT(g_indicator.LLineMask,4));
 	
