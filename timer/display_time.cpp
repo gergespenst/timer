@@ -8,7 +8,7 @@
 
 
 #include "display_time.h"
-#define UPDATETIME 500
+
 static struct DATE{
 	int8_t	hour,
 			minute,
@@ -46,7 +46,7 @@ struct ALARM{
 	uint8_t alarmOn:2;
 	};
 	
-#define NUMOFALARMS 4
+
 #define ALARMEEPROMSTART 0x04
 ALARM g_alarms[NUMOFALARMS];
 
@@ -106,8 +106,30 @@ void UpdateAlarmDigit(uint8_t alarm){
 		case COUNTER_MOD:
 				{
 				if  ( (g_alarms[alarm].alarmPeriod & 0xF000) != 0x0000)
-				{
-					uint16_t deltaPeriod = g_alarms[alarm].alarmPeriod - g_alarms[alarm].alarmOnCounter;
+				{//если таймер включен то отображаем либо врем€ до выключени€ (и тогда мигают точки)
+				 //либо врем€ до следующего включени€ - точки не мигают
+					uint16_t curTime = g_clock.date.hour*60 + g_clock.date.minute;
+					uint16_t startTime = g_alarms[alarm].startHour*60 + g_alarms[alarm].startMin;
+					uint16_t deltaPeriod;
+					//ќтображение состо€ни€ будильника
+					// ≈сли текущее врем€ больше стартового то 
+					// ј) если будильник работает то отображаем врем€ до конца работы
+					// Ѕ) если будильник не работает то отображаем врем€ до начала работы
+					if (curTime > startTime)
+					{
+						if (g_alarms[alarm].alarmOnCounter){
+							deltaPeriod =  (g_alarms[alarm].alarmPeriod & 0x0FFF) - curTime + startTime;
+						}else{
+							deltaPeriod = 1440 - curTime + startTime;
+						}
+					}else{
+						if (g_alarms[alarm].alarmOnCounter)
+						{
+							deltaPeriod =  (startTime + (g_alarms[alarm].alarmPeriod & 0x0FFF))%1440 - curTime;
+						}else{
+							deltaPeriod = startTime - curTime;
+						}
+					}
 					alarmDigit[0] = deltaPeriod/((uint16_t)60);
 					alarmDigit[1] = deltaPeriod%((uint16_t)60);
 				}else{
@@ -199,7 +221,7 @@ void DisplayAlarm(uint8_t alarm){
 			SetDigit(1,alarmDigit[0]%10, ELEMON<<(g_alarms[alarm].alarmEdit>>1));
 			SetDigit(2,alarmDigit[1]/10, ELEMON<<(g_alarms[alarm].alarmEdit & 0x01) );
 			SetDigit(3,alarmDigit[1]%10, ELEMON<<(g_alarms[alarm].alarmEdit & 0x01) );
-			SetDots(DOTL|DOTH,ELEMON);
+			SetDots(DOTL|DOTH,ELEMON<<(g_alarms[alarm].alarmOnCounter != 0) );
 		}else{
 			SetDigit(0,0,ELEMOFF);
 			SetDigit(1,0, ELEMON);
@@ -212,6 +234,7 @@ void DisplayAlarm(uint8_t alarm){
 		
 }
 
+//TODO: »зменить функцию так чтоб можно было поставить период 24 часа 00 минут
 void ChangeDigit(uint8_t alarm,uint8_t sign){//0 - '+', 1 - '-'
 	if(sign)
 		alarmDigit[2 - g_alarms[alarm].alarmEdit] = alarmDigit[2 - g_alarms[alarm].alarmEdit] - 1;
@@ -319,6 +342,8 @@ uint8_t AlarmPress(uint8_t alarm,uint8_t key){
 //////////////////////////////////////////////////////////////////////////
 void InitClock()
 {
+	g_clock.date.hour = 0;
+	g_clock.date.minute = 0;
 	g_clock.edit_digit = 0;
 	AddTask(UpdateTime,0,UPDATETIME);
 	
@@ -368,34 +393,41 @@ void UpdateTime()
 {
 	if (g_clock.edit_digit == 0)
 	{	
-//¬место этого должен быть запрос времени от RTC
-#if 1
+		uint8_t result = 1;
+//0 - нормальна€ работа, врем€ получаетс€ от RTC
+//1 - тестирование, врем€ инкрементируетс€ при каждом обновлении
+#if 0
 	if (g_clock.date.minute == 59)
 		{
-			(g_clock.date.hour > 23)?(g_clock.date.hour = 0):(g_clock.date.hour++);
+			(g_clock.date.hour > 22)?(g_clock.date.hour = 0):(g_clock.date.hour++);
 		}
 		(g_clock.date.minute >= 59)?( g_clock.date.minute = 0):( g_clock.date.minute++);
 #else
 		uint8_t tempByte;
-		DS1307Read(SECREG,&tempByte);
+		result = DS1307Read(SECREG,&tempByte);
 		if (tempByte & CLOCHALT) g_clock.edit_digit = 0x02;//если выключены клоки в RTC то переходим к редактированию времени
-		DS1307Read(MINREG,&tempByte);
+		result = DS1307Read(MINREG,&tempByte);
 		g_clock.date.minute = ( (tempByte & 0x70) >> 4)*10 + (tempByte & 0x0F);
-		DS1307Read(HOURREG,&tempByte);
+		result = DS1307Read(HOURREG,&tempByte);
 		g_clock.date.hour = ( (tempByte & 0x30) >> 4)*10 + (tempByte & 0x0F);
-		DS1307Read(MONTHREG,&tempByte);
+		result = DS1307Read(MONTHREG,&tempByte);
 		g_clock.date.month = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-		DS1307Read(DATEREG,&tempByte);
+		result = DS1307Read(DATEREG,&tempByte);
 		g_clock.date.date = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
-		DS1307Read(YEARREG,&tempByte);
+		result = DS1307Read(YEARREG,&tempByte);
 		g_clock.date.year = ( (tempByte & 0xF0) >> 4)*10 + (tempByte & 0x0F);
 			
-		DS1307Read(DAYREG,&tempByte);
+		result = DS1307Read(DAYREG,&tempByte);
 		g_clock.date.numday = (tempByte & 0x0F);	
+		
 #endif		
 //////////////////////////////////////////////////////////////////////////
-
-	UpdateDigit();
+	if (result == 0x00)
+			{
+				g_clock.digit[0] = 33;
+				g_clock.digit[1] = 44;
+			}
+		else UpdateDigit();
 	
 	}		
 }
@@ -587,3 +619,12 @@ void SetTimeToRTC()
  
  
 
+void ResetToClock(){
+	for (uint8_t i = 0; i < NUMOFALARMS; i++)
+	{
+		StopShowAlarm(i);
+	}
+	StopShowTime();
+	StartShowTime();
+	
+}

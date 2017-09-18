@@ -15,11 +15,15 @@
 #include "ds1307.h"
 #include <avr/eeprom.h>
 
+#define NUMOFALARMS 4
+#define UPDATETIME 2000
+
 void InitAlarm();
 void AlarmFunc(uint8_t alarm,uint8_t state);
 void AlarmsCheck();
 void DisplayAlarm(uint8_t alarm);
 uint8_t AlarmLongPress(uint8_t alarm, uint8_t key);
+void StopShowAlarm(uint8_t alarm);
 uint8_t AlarmPress(uint8_t alarm,uint8_t key);
 
 void InitClock();
@@ -39,4 +43,5 @@ void SetTimeToRTC();
 
 
 
+void ResetToClock();
 #endif //__DISPLAY_TIME_H__

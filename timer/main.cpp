@@ -46,9 +46,15 @@ DisplayAllSeg();
 #define TIMER1MODE 0x01
 int8_t g_mode = 0;
 
-
+//функция которая сбрасывает экран к отображению часов при отсутствии нажатия кнопок 
+#define TIMETORES 10000
+void ResetAfterWait(){
+	ResetToClock();
+	g_mode = 0;
+}
 
 void PressFunc(int8_t key){
+	AddTask(ResetAfterWait,TIMETORES,0);
 	uint8_t retval = 1;
 	switch (g_mode){
 		case CLOCKMODE: retval = ClockPress(key);break;
@@ -73,6 +79,7 @@ void PressFunc(int8_t key){
 };
 	
 void LongPressFunc(int8_t key){
+	AddTask(ResetAfterWait,TIMETORES,0);
 	uint8_t retval = 1;
 	switch (g_mode){
 		case CLOCKMODE:retval = ClockLongPress(key);break;
@@ -123,13 +130,13 @@ int main(void)
 	sei();
 	StartDispatcherTimer();
 
-	//AddTask(TestBlink,0,2000);
+	
 	/*Fill task query*/
 	AddTask(DisplayAllSeg,0,4);
 	AddTask(DisplayMode,0,50);
 	AddTask(ScanKeyboard,0,200);
 	AddTask(BlinkAllSeg,500,500);
-	//AddTask(UpdateTime,500,500);
+	
 	/*END: Fill */
 	
 	StartShowTime();
