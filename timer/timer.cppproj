@@ -217,9 +217,6 @@
     <Compile Include="i2c.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="IncFile1.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="keyboard.cpp">
       <SubType>compile</SubType>
     </Compile>

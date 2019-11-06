@@ -23,6 +23,7 @@ void AddTask(TPTR AddingTask, unsigned int  delay, unsigned int  period){
 			TaskQueue[i].period = period;
 			TaskQueue[i].start_delay = delay;
 			TaskQueue[i].run = 0;
+			TaskQueue[i].real_time = 0;
 			}
 			return;
 		}
@@ -33,12 +34,45 @@ void AddTask(TPTR AddingTask, unsigned int  delay, unsigned int  period){
 		{
 			TaskQueue[QueueTail].task = AddingTask;
 			TaskQueue[QueueTail].run = 0;
+			TaskQueue[QueueTail].real_time = 0;
 			TaskQueue[QueueTail].period = period;
 			TaskQueue[QueueTail].start_delay = delay;
 			QueueTail++;
 		}
 	}
 	
+}
+
+void AddRealTimeTask( TPTR AddingTask, unsigned int delay, unsigned int period )
+{//TODO: Не очень хорошо полностью копировать функцию кроме одной строчки
+		if (!AddingTask) return;
+		
+		for (unsigned char i = 0 ; i < QueueTail; i++)
+		{
+			if (TaskQueue[i].task == AddingTask )
+			{
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+					TaskQueue[i].period = period;
+					TaskQueue[i].start_delay = delay;
+					TaskQueue[i].run = 0;
+					TaskQueue[i].real_time = 1;
+				}
+				return;
+			}
+		}
+		
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+			if (QueueTail < MAX_TASKS)
+			{
+				TaskQueue[QueueTail].task = AddingTask;
+				TaskQueue[QueueTail].run = 0;
+				TaskQueue[QueueTail].real_time = 1;
+				TaskQueue[QueueTail].period = period;
+				TaskQueue[QueueTail].start_delay = delay;
+				QueueTail++;
+			}
+		}
+
 }
 
 void DeleteTask(TPTR delTask){
@@ -53,6 +87,7 @@ void DeleteTask(TPTR delTask){
 					TaskQueue[i].start_delay = TaskQueue[QueueTail - 1].start_delay;
 					TaskQueue[i].period = TaskQueue[QueueTail - 1].period;
 					TaskQueue[i].run = TaskQueue[QueueTail - 1].run;
+					TaskQueue[i].real_time = TaskQueue[QueueTail - 1].real_time;
 				}
 				QueueTail--;
 			}
@@ -66,7 +101,7 @@ void Dispatcher()
 	for (unsigned char i = 0 ; i < QueueTail; i++)
 	{
 		tempTask = &TaskQueue[i];
-		if (tempTask->run == 1)
+		if ( (tempTask->run == 1) && (tempTask->real_time == 0))
 		{
 			(*(tempTask->task))();
 			if (tempTask->period == 0)
@@ -91,7 +126,13 @@ void TimerProcess()
 	{
 		if (TaskQueue[i].start_delay == 0)
 		{
-			TaskQueue[i].run = 1;
+			if (TaskQueue[i].real_time == 1)//если стоит флаг реалтайм то выполняем функцию в прерывании
+			{
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+				(*(TaskQueue[i].task))();
+				}
+			}else TaskQueue[i].run = 1;
+			
 		}else
 			TaskQueue[i].start_delay--;
 	}

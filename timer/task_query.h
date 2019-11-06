@@ -25,14 +25,22 @@ volatile static struct TTask{
 	TPTR task;
 	unsigned int start_delay;
 	unsigned int  period;
-	char run;
+	char run:4;//флаг на запуск задачи в функции Dispatcher
+	char real_time:4;//флаг на запуск задачи в обработчике прерывания от таймера дял задач real time
 	} TaskQueue[MAX_TASKS];
 	
 
 
 void AddTask(TPTR AddingTask, unsigned int  delay, unsigned int  period);
-void TimerProcess();// Необходимо вызывать данную функцию по таймеру, задержка и период задаются в количестве периодов вызова данной функции
+	//Добавляет задачу в очередь. delay - задержка перед первым выполнением, period - период повторения
+void AddRealTimeTask(TPTR AddingTask, unsigned int  delay, unsigned int  period);
+	//Добавляет задачу реального времени в очередь. delay - задержка перед первым выполнением, period - период повторения
+	//Задача будет выполняться в прерывании таймера по истечении задержки или периода. Задача должны быть короткой!!!
+	//Использовать только для задач критичных к временным интервалам
+void TimerProcess();
+	// Необходимо вызывать данную функцию по таймеру, задержка и период задаются в количестве периодов вызова данной функции
 void Dispatcher();
+	//Функция должна крутиться в основном цикле. В ней вызываются по очереди задачи у которых подошло время выполнения
 void DeleteTask(TPTR delTask);
-   
+   //Удаляет задачу из очереди
 #endif //__TASK_QUERY_H__
