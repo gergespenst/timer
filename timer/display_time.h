@@ -44,4 +44,6 @@ void SetTimeToRTC();
 
 
 void ResetToClock();
+enum {NORMAL_TEMP = 1, NOT_NORMAL_TEMP = 0};
+extern uint8_t IsNormalTemp();//функция проверки температуры, будет пока применяться только к четвертому каналу управления
 #endif //__DISPLAY_TIME_H__

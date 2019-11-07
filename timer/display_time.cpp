@@ -31,6 +31,7 @@ static struct CLOCK{
 enum CLOKMODE {TIME_MOD,DATE_MOD,YEAR_MOD};
 //////////////////////////////////////////////////////////////////////////
 enum ALARMMODE {COUNTER_MOD,START_TIME_MOD,PERIOD_MOD};
+enum ALARM_STATE{ALARM_OFF = 0,ALARM_ON = 1};
 typedef void (*AFPTR)(uint8_t);
 static int8_t alarmDigit[2];//цифры для вывода на экран общие для всех
 
@@ -38,7 +39,7 @@ struct ALARM{
 	uint8_t startHour;		//час начала включения нагрузки
 	uint8_t startMin;		//минута начала включения нагрузки
 	uint16_t alarmPeriod;	//продолжительность включенного состояния в минутах, до 24 часов (1440 (0x05A0) минут)
-							//старшие 4 бита - флаг выключенности таймера 0 - выключен, иначе - включен
+							//старший 1 бита - флаг выключенности таймера 0 - выключен, иначе - включен
 	AFPTR alarmFunc;
 	uint16_t alarmOnCounter;//счетчик продолжительности включенного состояния
 	uint8_t alarmEdit:2;		//флаг редактирования будильника
@@ -105,7 +106,7 @@ void UpdateAlarmDigit(uint8_t alarm){
 	switch (g_alarms[alarm].alarmDispMode  ){
 		case COUNTER_MOD:
 				{
-				if  ( (g_alarms[alarm].alarmPeriod & 0xF000) != 0x0000)
+				if  ( ((g_alarms[alarm].alarmPeriod & 0x8000)>>15) != ALARM_OFF)
 				{//если таймер включен то отображаем либо время до выключения (и тогда мигают точки)
 				 //либо время до следующего включения - точки не мигают
 					uint16_t curTime = g_clock.date.hour*60 + g_clock.date.minute;
@@ -166,7 +167,13 @@ void AlarmsCheck(){
 	{
 		//если таймер выключен то принудительно выключаем нагрузку чтоб там не было с периодом
 		//и идем на следующую итерацию цикла
-		if ( ((g_alarms[i].alarmPeriod & 0xF000) >> 12) == 0)
+		//Проверка на отсутствие блокировки по температуре для четвертого!!!! канала
+		if( (i == 3) && (IsNormalTemp() == NOT_NORMAL_TEMP)) {//если температура выше нормы то отключаем канал принудительно!
+					AlarmFunc(i,ELEMOFF);
+					continue;
+		}
+		
+		if ( ((g_alarms[i].alarmPeriod & 0x8000) >> 15) == ALARM_OFF)
 		{
 			AlarmFunc(i,ELEMOFF);	
 			continue;
@@ -321,7 +328,7 @@ uint8_t AlarmPress(uint8_t alarm,uint8_t key){
 				(g_alarms[alarm].alarmEdit== 0x02)?(g_alarms[alarm].alarmEdit = 0x01):(g_alarms[alarm].alarmEdit = 0x02);
 			}else
 			{
-				g_alarms[alarm].alarmPeriod ^= 0xF000;
+				g_alarms[alarm].alarmPeriod ^= 0x8000;
 				SaveAlarmToEEPROM(alarm);//сохраняем состояние в eeprom
 				
 			}
@@ -459,12 +466,16 @@ void UpdateDispClock()
 	
 	for (uint8_t i = 0; i < NUMOFALARMS; i++)
 	{//TODO: Добавить мигание при сработке будильника
-		if((g_alarms[i].alarmPeriod & 0xF000) != 0x0000) SetLLineElements(ELEM1<<i,
+		if(((g_alarms[i].alarmPeriod & 0x8000)>>15) != ALARM_OFF) SetLLineElements(ELEM1<<i,
 																		  ELEMON<<(g_alarms[i].alarmOnCounter != 0) );
 	}
 
 	SetHLineElements(ALLELEM,ELEMOFF);
-	//здесь должен быть вывод состояния термодатчиков
+	// вывод состояния термодатчиков
+	if(IsNormalTemp() == NOT_NORMAL_TEMP){//если сработала отсечка по температуре то мигаем значком датчика пока только одного
+		SetHLineElements(ELEM4,ELEMBLINK);
+	}
+	
 	
 	
 }

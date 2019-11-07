@@ -21,10 +21,12 @@
 #define PARASITE_PORT      PORTD
 #define PARASITE_DDR       DDR(PARASITE_PORT)
 
+#define TRESHOLD_TEMP 27 //температура срабатывани€ отключен€и по термодатчику TODO: волшебное число чтоб влезть в пам€ть
+
 typedef struct
 {
 	uint64_t rom;//адрес датчика
-	uint8_t cur_temp; // целые градусы от -128 до + 128
+	int8_t cur_temp; // целые градусы от -128 до + 128
 
 	uint8_t hi_temp_tr;//верхн€€ граница срабатывани€ ( целые градусы от -128 до + 128) TODO: дурь кака€то, сузить диапазон!
 	uint8_t lo_temp_tr;//нижн€€ граница срабатывани€
@@ -34,6 +36,7 @@ typedef struct
 
 void InitTemp();
 void UpdateDispTemp(uint8_t nterm);
+uint8_t IsNormalTemp();//‘ункци€ возвращает 1 если температура в норме и 0 если температура выше заданной
 
 void UpdateTemp();
 #endif //__DISPLAY_TEMP_H__
