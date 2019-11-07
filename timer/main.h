@@ -20,6 +20,9 @@
 #define IICSDAPin			  2
 #define IICSDLPin             1
 
+//порт 1Wire
+//конфигурация расположена в файле "OneWire.h"
+
 
 
 #endif /* MAIN_H_ */

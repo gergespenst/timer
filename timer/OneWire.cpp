@@ -40,25 +40,22 @@ uint8_t reset() {
  * отправить один бит
  */
 void writeBit(uint8_t bit) {
+	cli();
   if (bit & 1) {
-    cli();
     // логический «0» на 1us
     ONE_WIRE_PORT &= ~(1 << ONE_WIRE_DQ);
     ONE_WIRE_DDR |= (1 << ONE_WIRE_DQ); // выход
-    _delay_us(10);
-    sei();
+    _delay_us(10); 
     ONE_WIRE_DDR &= ~(1 << ONE_WIRE_DQ); // вход
     _delay_us(55);
   } else {
-    cli();
-    // логический «0» на 1us
     ONE_WIRE_PORT &= ~(1 << ONE_WIRE_DQ);
     ONE_WIRE_DDR |= (1 << ONE_WIRE_DQ); // выход
     _delay_us(65);
     ONE_WIRE_DDR &= ~(1 << ONE_WIRE_DQ); // вход
-    sei();
     _delay_us(5);
   }
+  sei();
 }
 
 /*
@@ -136,7 +133,7 @@ uint64_t readRoom(void) {
  */
 void setDevice(uint64_t rom) {
   uint8_t i = 64;
-  reset();
+ 
   writeByte(CMD_MATCHROM);
   while (i--) {
     writeBit(rom & 1);
@@ -189,6 +186,7 @@ void searchRom(uint64_t * roms, uint8_t & n) {
         err++;
       }
       if (err > 3) {
+		  n = 0;
         return;
       }
     } while (err != 0);
@@ -246,6 +244,6 @@ uint64_t searchNextAddress(uint64_t lastAddress, uint8_t & lastDiscrepancy) {
  * пропустить ROM
  */
 void skipRom() {
-  reset();
+
   writeByte(CMD_SKIPROM);
 }

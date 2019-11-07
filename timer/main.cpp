@@ -32,7 +32,7 @@ ISR(TIMER0_OVF_vect){//при переполнении вызываем шаг по времени
 //////////////////////////////////////////////////////////////////////////
 
 
-#define NMODES 5
+#define NMODES 6
 #define CLOCKMODE	0x00
 #define TIMER1MODE	0x01
 #define TEMP1MODE	0x05
@@ -100,8 +100,8 @@ void UpdateDisplay(){
 	case TIMER1MODE + 1:
 	case TIMER1MODE + 2:
  	case TIMER1MODE + 3: UpdateDispAlarm(g_mode - TIMER1MODE);break;
-// 	case TEMP1MODE:
-// 	case TEMP1MODE + 1: UpdateDispTemp(g_mode - TEMP1MODE );break;
+ 	case TEMP1MODE:
+ 	case TEMP1MODE + 1: UpdateDispTemp(g_mode - TEMP1MODE );break;
 	default:break;
 	}
 }
@@ -124,11 +124,13 @@ int main(void)
 	AddTask(UpdateDisplay,0,50);
 	AddTask(ScanKeyboard,0,100);
 	AddTask(BlinkAllSeg,500,500);
-	AddTask(UpdateTemp,0,200);
+	AddTask(UpdateTemp,0,3000);
 	/*END: Fill */
 	
 	StartShowTime();
-
+//DEBUG
+g_mode = TEMP1MODE;
+//END:DEBUG
 	
     while (1) Dispatcher(); 
 	
