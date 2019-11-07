@@ -54,6 +54,7 @@ void PressFunc(int8_t key){
 		case TIMER1MODE + 1:
 		case TIMER1MODE + 2:
 		case TIMER1MODE + 3: retval = AlarmPress(g_mode - 1,key);break;
+		case TEMP1MODE: retval = TempPress(g_mode - TEMP1MODE,key);break;
 		default: retval = 0;break;
 	}
 
@@ -79,6 +80,7 @@ void LongPressFunc(int8_t key){
 		case TIMER1MODE + 1:
 		case TIMER1MODE + 2:
 		case TIMER1MODE + 3:retval = AlarmLongPress(g_mode - TIMER1MODE,key);break;
+		case TEMP1MODE:retval = TempLongPress(g_mode - TEMP1MODE,key);break;
 		default: retval = 0;break;
 	}
 	
@@ -129,7 +131,7 @@ int main(void)
 	
 	StartShowTime();
 //DEBUG
-g_mode = TEMP1MODE;
+//g_mode = TEMP1MODE;
 //END:DEBUG
 	
     while (1) Dispatcher(); 

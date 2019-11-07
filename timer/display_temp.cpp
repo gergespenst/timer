@@ -14,29 +14,34 @@
 
 T_THERMO_SENSOR g_thermo_sens[MAX_NUM_OF_THERMO];
 uint8_t g_finded_thermo_sens;
-uint64_t g_rom;
+uint8_t temperatureL;
+uint8_t temperatureH;
+int8_t g_digit;//отображаемая цифра
+
 void InitTemp(){
 	INIT_PARASITE() ;
 	oneWireInit(ONE_WIRE_DQ);
 	g_finded_thermo_sens = MAX_NUM_OF_THERMO;//ставим число сенсоров в максимум
 	uint64_t  roms[MAX_NUM_OF_THERMO];
 	searchRom(roms, g_finded_thermo_sens);//ищем устройства на шине
-		g_rom = roms[0];
+
 	for(uint8_t i = 0; i < g_finded_thermo_sens; i++){//копируем адреса в глобальную структуру и ставим флаги присутствия 
 		g_thermo_sens[i].rom = roms[i];
 		g_thermo_sens[i].exist = 1;
 	}
 	
+	g_thermo_sens[0].hi_temp_tr = eeprom_read_byte((uint8_t*)(0x04 - 1 ));//0x04 - адрес с которого начинается параметры таймеров
+	//if(g_thermo_sens[0].hi_temp_tr > 99) g_thermo_sens[0].hi_temp_tr = 99;
 }
 
 
-uint8_t temperatureL;
-uint8_t temperatureH;
+
 
 void UpdateDispTemp( uint8_t nterm )
 {
 	SetLLineElements(ALLELEM,ELEMOFF);
 	SetHLineElements(ALLELEM,ELEMOFF);
+	SetDots(DOTH|DOTL,ELEMOFF);
 	SetHLineElements(ELEM4  ,ELEMON);
 		
 		
@@ -48,9 +53,25 @@ void UpdateDispTemp( uint8_t nterm )
  			SetDigit(1,0,ELEMOFF);
 // 		SetDigit(2,(temperatureL & 0xF0 )>>4,ELEMON);
 // 		SetDigit(3,temperatureL & 0x0F,ELEMON);
-		
-		SetDigit(2,g_thermo_sens->cur_temp /10,ELEMON);
-		SetDigit(3,g_thermo_sens->cur_temp %10,ELEMON);
+		if(g_thermo_sens[0].edit_hi){
+			if (g_digit > g_thermo_sens[0].cur_temp)
+			{
+				SetDots(DOTH,ELEMON);
+			}
+ 			if (g_digit < g_thermo_sens[0].cur_temp)
+ 			{
+	 			SetDots(DOTL,ELEMON);
+ 			}
+ 			if (g_digit == g_thermo_sens[0].cur_temp)
+ 			{
+	 			SetDots(DOTH|DOTL,ELEMON);
+	 								}
+		SetDigit(2,g_digit  /10,ELEMBLINK);
+		SetDigit(3,g_digit%10,ELEMBLINK);
+		}else{
+		SetDigit(2,g_digit  /10,ELEMON);
+		SetDigit(3,g_digit%10,ELEMON);	
+		}
 		//		SetDigit(2,(g_thermo_sens->rom & 0xF0)>>4,ELEMON);
 		//		SetDigit(3,g_thermo_sens->rom & 0x0F,ELEMON);
 
@@ -60,7 +81,7 @@ uint8_t IsNormalTemp()
 {
 	if (g_finded_thermo_sens > 0)
 	{
-		if ((g_thermo_sens->cur_temp) > (int8_t) TRESHOLD_TEMP)//если температура на датчике больще порога то отключаем
+		if ((g_thermo_sens[0].cur_temp) > (int8_t) g_thermo_sens[0].hi_temp_tr)//если температура на датчике больще порога то отключаем
 		{
 			return 0;
 		}else return 1;
@@ -79,6 +100,54 @@ void UpdateTemp(){	//static uint8_t device = 0;//Необхаодимо для перебора датч
 // 		{
 // 			currentSensor->cur_temp = (temperatureH & 0x80)	 + (temperatureL >> 1);
 // 		}
-	//	if( (currentSensor->rom & 0x0000FF) == 0x28) {//DS18B20			currentSensor->cur_temp =  (readByte() >> 4) +(readByte() << 4);//пересчитываем температуру				//	}		//device++;//переходим к следующему датчику	//	if (device > g_finded_thermo_sens - 1) device = 0;//проверяем на выход за пределы		AddTask(UpdateTemp,3000,UPDATE_TEMP_PERIOD);// откладываем задачу обновления данных надолго		state = SELECT_DEVICE;		}break;		default:;	}
+	//	if( (currentSensor->rom & 0x0000FF) == 0x28) {//DS18B20			currentSensor->cur_temp =  (readByte() >> 4) +(readByte() << 4);//пересчитываем температуру								if(!g_thermo_sens->edit_hi) g_digit = currentSensor->cur_temp;		//	}		//device++;//переходим к следующему датчику	//	if (device > g_finded_thermo_sens - 1) device = 0;//проверяем на выход за пределы		AddTask(UpdateTemp,3000,UPDATE_TEMP_PERIOD);// откладываем задачу обновления данных надолго		state = SELECT_DEVICE;		}break;		default:;	}
 
+}
+
+uint8_t TempLongPress(uint8_t alarm, uint8_t key){
+	switch (key){
+		case KEY0:break;
+		case KEY1:{
+			if (g_thermo_sens[0].edit_hi)
+			{
+				g_thermo_sens[0].edit_hi = 0;
+								
+			}else
+			{
+				g_thermo_sens[0].edit_hi = 0x01;
+				g_digit = g_thermo_sens->hi_temp_tr;
+			}
+			return 1;
+		}break;
+		case KEY2:break;
+	}
+	return 0;
+
+}
+
+uint8_t TempPress(uint8_t alarm,uint8_t key){
+	switch (key){
+		case KEY0:{
+			if(g_thermo_sens[0].edit_hi){
+				g_digit--;
+				return 1;
+			}else return 0;
+		}break;
+		case KEY1:{
+			if(g_thermo_sens[0].edit_hi){
+				g_thermo_sens[0].edit_hi = 0x00;
+				g_thermo_sens[0].hi_temp_tr = g_digit;
+				eeprom_update_byte((uint8_t*)(0x04 - 1),g_thermo_sens[0].hi_temp_tr);
+				g_digit = g_thermo_sens[0].cur_temp;
+				return 1;
+			}else return 0;
+		}break;
+		case KEY2:{
+			if(g_thermo_sens[0].edit_hi){
+				g_digit++;
+				return 1;
+			}else return 0;
+		}break;
+	}
+	return 0;
 }
